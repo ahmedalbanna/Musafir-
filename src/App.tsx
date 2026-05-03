@@ -4,7 +4,7 @@ import {
   Bus, MapPin, Calendar, Search, User as UserIcon, 
   LogOut, Ticket as TicketIcon, ChevronRight, ArrowRight,
   Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation,
-  LayoutDashboard
+  LayoutDashboard, Lock, CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
@@ -24,7 +24,7 @@ const MOCK_USER = { uid: 'u1', displayName: 'أحمد صالح', email: 'ahmed@e
 
 export default function App() {
   const [user, setUser] = useState<typeof MOCK_USER | null>(MOCK_USER);
-  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'TICKET' | 'BOOKINGS'>('HOME');
+  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SHELLEN_PAYMENT' | 'TICKET' | 'BOOKINGS'>('HOME');
   const [isOperatorMode, setIsOperatorMode] = useState(false);
   
   const [searchParams, setSearchParams] = useState({ 
@@ -58,7 +58,7 @@ export default function App() {
     setView('CHECKOUT');
   };
 
-  const handlePayment = async () => {
+  const handleCreateTicket = async () => {
     setLoading(true);
     // Simulate payment API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -498,14 +498,80 @@ export default function App() {
                        <p className="text-4xl font-black text-gray-900 font-display">{selectedTrip.price.toLocaleString()} <span className="text-lg text-gray-500">د.ع</span></p>
                      </div>
                      <button 
-                       onClick={handlePayment}
-                       disabled={loading}
+                       onClick={() => setView('SHELLEN_PAYMENT')}
                        className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 disabled:opacity-70"
                      >
-                       {loading ? 'جاري المعالجة...' : 'تأكيد ودفع'}
+                       متابعة الدفع
                      </button>
                   </div>
                </div>
+            </motion.div>
+          )}
+
+          {/* --- SHELLEN WALLET PAYMENT SIMULATOR --- */}
+          {view === 'SHELLEN_PAYMENT' && selectedTrip && selectedSeat && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-md mx-auto"
+            >
+              <div className="bg-[#FF6B00] rounded-[2rem] shadow-2xl overflow-hidden relative">
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
+
+                 <div className="p-6 pb-0 flex justify-between items-center relative z-10">
+                   <button onClick={() => setView('CHECKOUT')} className="text-white hover:bg-white/20 p-2 rounded-full transition-colors">
+                     <ArrowRight className="w-5 h-5" />
+                   </button>
+                   <div className="font-display font-black text-white tracking-widest text-lg">شِلّن</div>
+                 </div>
+
+                 <div className="p-8 text-center text-white relative z-10">
+                    <p className="text-white/80 font-bold mb-2">طلب دفع من</p>
+                    <div className="bg-white/10 border border-white/20 inline-block px-4 py-2 rounded-xl backdrop-blur-sm mb-8 font-black text-lg">
+                      تطبيق سفري Safary
+                    </div>
+
+                    <p className="text-sm font-bold text-white/80 mb-1">المبلغ المطلوب</p>
+                    <p className="text-5xl font-black font-display mb-8">{selectedTrip.price.toLocaleString()} <span className="text-xl">د.ع</span></p>
+
+                    <div className="bg-white rounded-3xl p-6 text-gray-900 shadow-xl text-right relative overflow-hidden">
+                       {loading ? (
+                          <div className="py-8 flex flex-col items-center justify-center">
+                             <motion.div 
+                               animate={{ rotate: 360 }}
+                               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                               className="w-12 h-12 border-4 border-gray-100 border-t-[#FF6B00] rounded-full mb-4"
+                             />
+                             <p className="font-bold text-gray-500">جاري التأكيد مع البنك المركزي...</p>
+                          </div>
+                       ) : (
+                         <>
+                           <div className="flex items-center gap-3 mb-6 bg-gray-50 p-4 rounded-xl">
+                              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                 <UserIcon className="w-5 h-5 text-gray-400" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-gray-400">حسابك</p>
+                                <p className="font-black text-sm">{user?.displayName}</p>
+                              </div>
+                           </div>
+
+                           <div className="flex items-center justify-center gap-2 text-sm font-bold text-gray-400 mb-6 bg-orange-50/50 p-3 rounded-lg border border-orange-100">
+                              <Lock className="w-4 h-4 text-[#FF6B00]" /> الدفع محمي بتشفير البنك المركزي العراقي
+                           </div>
+
+                           <button 
+                             onClick={handleCreateTicket}
+                             className="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-[#E66000] transition-colors active:scale-95 shadow-lg shadow-[#ff6b00]/20"
+                           >
+                             السحب من الرصيد والتأكيد
+                           </button>
+                         </>
+                       )}
+                    </div>
+                 </div>
+              </div>
             </motion.div>
           )}
 
