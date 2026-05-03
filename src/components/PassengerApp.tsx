@@ -6,7 +6,7 @@ import {
   Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation,
   LayoutDashboard, Lock, CheckCircle, Home, History, Bell,
   Menu, X, Filter, SlidersHorizontal, Map, Wifi, Zap, Wind, Coffee,
-  Settings, BellRing, Trash2
+  Settings, BellRing, Trash2, Heart, Camera, ChevronLeft
 } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -17,7 +17,7 @@ import { Trip, Booking, Notification, NotificationPreferences } from '../types';
 import TrackingMap from './TrackingMap';
 
 interface PassengerAppProps {
-  user: { uid: string; displayName: string; email: string } | null;
+  user: { uid: string; displayName: string; email: string; photoURL?: string } | null;
   onLogin: () => void;
   onLogout: () => void;
   onLaunchOperator: () => void;
@@ -31,7 +31,7 @@ const AMENITIES = [
 ];
 
 export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator }: PassengerAppProps) {
-  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING' | 'NOTIFICATIONS' | 'NOTIFICATION_SETTINGS'>('HOME');
+  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING' | 'NOTIFICATIONS' | 'NOTIFICATION_SETTINGS' | 'PROFILE'>('HOME');
   const [searchParams, setSearchParams] = useState({ 
     from: 'بغداد', 
     to: 'أربيل', 
@@ -740,6 +740,118 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
             </motion.div>
           )}
 
+          {/* PROFILE VIEW */}
+          {view === 'PROFILE' && (
+            <motion.div 
+               key="profile"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="space-y-8 pb-24 flex flex-col min-h-screen pt-4"
+            >
+               {/* Profile Header */}
+               <div className="px-6 flex flex-col items-center">
+                  <div className="relative group">
+                     <div className="w-28 h-28 rounded-[2.5rem] bg-emerald-950 flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-emerald-900/30 overflow-hidden border-4 border-white">
+                        {user?.photoURL ? (
+                          <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          user?.displayName.charAt(0)
+                        )}
+                     </div>
+                     <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-full shadow-lg border border-gray-100 flex items-center justify-center text-emerald-600 transition-transform active:scale-90">
+                        <Camera className="w-5 h-5" />
+                     </button>
+                  </div>
+                  <div className="mt-6 text-center">
+                     <h2 className="text-2xl font-black text-emerald-950 mb-1">{user?.displayName}</h2>
+                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{user?.email}</p>
+                  </div>
+               </div>
+
+               {/* Stats Grid */}
+               <div className="px-6 grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'رحلة', value: myBookings.length, icon: Map },
+                    { label: 'نقطة', value: '450', icon: Star },
+                    { label: 'محفوظة', value: '3', icon: Heart }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white p-4 rounded-3xl border border-gray-100 text-center shadow-sm">
+                       <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                          <stat.icon className="w-4 h-4" />
+                       </div>
+                       <p className="text-lg font-black text-emerald-950 font-display leading-none mb-1">{stat.value}</p>
+                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{stat.label}</p>
+                    </div>
+                  ))}
+               </div>
+
+               {/* Menu Groups */}
+               <div className="px-6 space-y-6">
+                  {/* Group 1: Account */}
+                  <div className="space-y-3">
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">حسابي</p>
+                     <div className="bg-white rounded-[2rem] border border-gray-100 divide-y divide-gray-50 overflow-hidden shadow-sm">
+                        {[
+                          { icon: UserIcon, label: 'تعديل الملف الشخصي', color: 'text-blue-600' },
+                          { icon: CreditCard, label: 'طرق الدفع', color: 'text-purple-600' },
+                          { icon: ShieldCheck, label: 'الأمان والخصوصية', color: 'text-emerald-600' }
+                        ].map((item, i) => (
+                          <button key={i} className="w-full p-5 flex items-center justify-between group active:bg-gray-50 transition-colors">
+                             <div className="flex items-center gap-4">
+                                <div className={cn("w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center transition-colors group-hover:bg-white border border-transparent group-hover:border-gray-100 shadow-none group-hover:shadow-sm", item.color)}>
+                                   <item.icon className="w-5 h-5" />
+                                </div>
+                                <span className="font-black text-emerald-950 text-sm">{item.label}</span>
+                             </div>
+                             <ChevronLeft className="w-4 h-4 text-gray-300" />
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  {/* Group 2: Preferences */}
+                  <div className="space-y-3">
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">التفضيلات</p>
+                     <div className="bg-white rounded-[2rem] border border-gray-100 divide-y divide-gray-50 overflow-hidden shadow-sm">
+                        <button 
+                           onClick={() => setView('NOTIFICATION_SETTINGS')}
+                           className="w-full p-5 flex items-center justify-between group active:bg-gray-50 transition-colors"
+                        >
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                 <Bell className="w-5 h-5" />
+                              </div>
+                              <span className="font-black text-emerald-950 text-sm">التنبيهات</span>
+                           </div>
+                           <ChevronLeft className="w-4 h-4 text-gray-300" />
+                        </button>
+                        <button className="w-full p-5 flex items-center justify-between group active:bg-gray-50 transition-colors">
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                                 <Wind className="w-5 h-5" />
+                              </div>
+                              <span className="font-black text-emerald-950 text-sm">اللغة والمظهر</span>
+                           </div>
+                           <ChevronLeft className="w-4 h-4 text-gray-300" />
+                        </button>
+                     </div>
+                  </div>
+
+                  {/* Sign Out */}
+                  <button 
+                     onClick={onLogout}
+                     className="w-full p-5 flex items-center gap-4 bg-red-50 rounded-3xl border border-red-100 text-red-600 active:scale-[0.98] transition-all"
+                  >
+                     <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <LogOut className="w-5 h-5" />
+                     </div>
+                     <span className="font-black text-sm">تسجيل الخروج</span>
+                  </button>
+               </div>
+            </motion.div>
+          )}
+
           {/* NOTIFICATIONS VIEW */}
           {view === 'NOTIFICATIONS' && (
             <motion.div 
@@ -1114,11 +1226,9 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
           <button 
             key={item.id}
             onClick={() => {
-              if (item.id === 'HOME' || item.id === 'BOOKINGS' || item.id === 'NOTIFICATIONS') {
+              if (item.id === 'HOME' || item.id === 'BOOKINGS' || item.id === 'NOTIFICATIONS' || item.id === 'PROFILE') {
                 setView(item.id as any);
-                if (item.id === 'NOTIFICATIONS') setIsMenuOpen(false);
-              } else if (item.id === 'PROFILE') {
-                setIsMenuOpen(true);
+                if (item.id === 'NOTIFICATIONS' || item.id === 'PROFILE') setIsMenuOpen(false);
               }
             }}
             className={cn(
