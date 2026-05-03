@@ -28,6 +28,7 @@ import {
 import { mockStats, mockTrips, mockBuses, mockBookings, mockCities } from '../data/mock';
 import { Trip, Bus, Booking } from '../types';
 import { format } from 'date-fns';
+import { cn } from '../lib/utils';
 
 interface DashboardProps {
   onExit: () => void;
@@ -35,11 +36,24 @@ interface DashboardProps {
 
 export default function Dashboard({ onExit }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TRIPS' | 'FLEET' | 'POS' | 'BOARDING' | 'REPORTS' | 'AGENTS'>('OVERVIEW');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const tabs = [
+    { id: 'OVERVIEW', label: 'نظرة عامة', icon: LayoutDashboard },
+    { id: 'TRIPS', label: 'الرحلات', icon: Calendar },
+    { id: 'FLEET', label: 'الأسطول', icon: BusIcon },
+    { id: 'POS', label: 'نقطة البيع (POS)', icon: Ticket },
+    { id: 'BOARDING', label: 'التدقيق', icon: QrCode },
+    { id: 'REPORTS', label: 'التقارير', icon: TrendingUp },
+    { id: 'AGENTS', label: 'الوكلاء', icon: Briefcase },
+  ];
+
+  const ActiveIcon = tabs.find(t => t.id === activeTab)?.icon || LayoutDashboard;
 
   return (
-    <div className="flex min-h-screen bg-[#F0F2F5] text-emerald-950 font-sans" dir="rtl">
-      {/* Sidebar */}
-      <aside className="w-64 bg-emerald-950 text-white flex flex-col sticky top-0 h-screen">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F0F2F5] text-emerald-950 font-sans pb-20 lg:pb-0" dir="rtl">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 bg-emerald-950 text-white flex-col sticky top-0 h-screen">
         <div className="p-8">
           <div className="flex items-center gap-3 mb-8">
             <div className="bg-emerald-600 p-2 rounded-xl">
@@ -49,15 +63,7 @@ export default function Dashboard({ onExit }: DashboardProps) {
           </div>
 
           <nav className="space-y-2">
-            {[
-              { id: 'OVERVIEW', label: 'نظرة عامة', icon: LayoutDashboard },
-              { id: 'TRIPS', label: 'الرحلات', icon: Calendar },
-              { id: 'FLEET', label: 'الأسطول', icon: BusIcon },
-              { id: 'POS', label: 'نقطة البيع (POS)', icon: Ticket },
-              { id: 'BOARDING', label: 'التدقيق (Boarding)', icon: QrCode },
-              { id: 'REPORTS', label: 'التقارير المالية', icon: TrendingUp },
-              { id: 'AGENTS', label: 'إدارة الوكلاء', icon: Briefcase },
-            ].map((item) => (
+            {tabs.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as any)}
@@ -87,36 +93,97 @@ export default function Dashboard({ onExit }: DashboardProps) {
         </div>
       </aside>
 
+      {/* Mobile Top Header */}
+      <header className="lg:hidden bg-emerald-950 text-white p-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <div className="bg-emerald-600 p-1.5 rounded-lg">
+            <BusIcon className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-black font-display text-lg tracking-tight">سفري</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="bg-white/10 p-2 rounded-xl"
+          >
+            <ActiveIcon className="w-5 h-5 text-emerald-400" />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="lg:hidden fixed inset-x-0 top-[64px] bg-emerald-950 text-white z-40 border-t border-white/10 p-6 rounded-b-[2rem] shadow-2xl"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {tabs.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === item.id 
+                      ? 'bg-white/10 text-emerald-400' 
+                      : 'text-emerald-100/50 hover:bg-white/5'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 pt-6 border-t border-white/10 flex justify-between">
+              <button 
+                onClick={onExit}
+                className="flex items-center gap-2 text-red-400 text-xs font-bold"
+              >
+                <LogOut className="w-4 h-4" /> خروج
+              </button>
+              <button className="flex items-center gap-2 text-emerald-100/50 text-xs font-bold">
+                <Settings className="w-4 h-4" /> الإعدادات
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-8">
-        <header className="flex justify-between items-center mb-10 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 gap-4">
           <div>
-            <h1 className="text-3xl font-black font-display text-emerald-950">
+            <h1 className="text-2xl md:text-3xl font-black font-display text-emerald-950">
               {activeTab === 'OVERVIEW' && 'نظرة عامة'}
               {activeTab === 'TRIPS' && 'إدارة الجداول'}
               {activeTab === 'FLEET' && 'أسطول الحافلات'}
               {activeTab === 'POS' && 'نقطة بيع التذاكر'}
-              {activeTab === 'BOARDING' && 'تدقيق الركاب والصعود'}
-              {activeTab === 'REPORTS' && 'التقارير والإحصائيات'}
-              {activeTab === 'AGENTS' && 'إدارة الوكلاء ونقاط البيع'}
+              {activeTab === 'BOARDING' && 'تدقيق الركاب'}
+              {activeTab === 'REPORTS' && 'التقارير'}
+              {activeTab === 'AGENTS' && 'الوكلاء'}
             </h1>
-            <p className="text-emerald-600/60 font-bold mt-1">مرحباً بك في لوحة تحكم خطوط الشمال</p>
+            <p className="text-emerald-600/60 font-bold mt-1 text-sm md:text-base">مرحباً بك في خطوط الشمال</p>
           </div>
 
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl shadow-inner border border-gray-100 font-bold text-sm">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+             <div className="flex-1 md:flex-none flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl shadow-inner border border-gray-100 font-bold text-xs md:text-sm">
                 <span className="text-emerald-600">الحالة:</span>
                 <span className="flex items-center gap-2 text-emerald-950">
                    متصل <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                 </span>
              </div>
-             <div className="bg-emerald-100 text-emerald-700 w-12 h-12 rounded-full flex items-center justify-center font-black shadow-sm">
+             <div className="bg-emerald-100 text-emerald-700 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black shadow-sm text-sm md:text-base">
                 N
              </div>
           </div>
         </header>
 
-        <section>
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
            {activeTab === 'OVERVIEW' && <OverviewTab />}
            {activeTab === 'TRIPS' && <TripsTab />}
            {activeTab === 'FLEET' && <FleetTab />}
@@ -126,86 +193,107 @@ export default function Dashboard({ onExit }: DashboardProps) {
            {activeTab === 'AGENTS' && <AgentsTab />}
         </section>
       </main>
+
+      {/* Mobile Bottom Nav Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center z-40 pb-safe">
+        {[
+          { id: 'OVERVIEW', icon: LayoutDashboard, label: 'رئيسية' },
+          { id: 'TRIPS', icon: Calendar, label: 'الرحلات' },
+          { id: 'POS', icon: Ticket, label: 'مكتب' },
+          { id: 'BOARDING', icon: QrCode, label: 'تدقيق' },
+        ].map((item) => (
+          <button 
+            key={item.id}
+            onClick={() => setActiveTab(item.id as any)}
+            className={`flex flex-col items-center gap-1 ${activeTab === item.id ? 'text-emerald-600' : 'text-gray-400'}`}
+          >
+            <item.icon className="w-5 h-5" />
+            <span className="text-[10px] font-bold">{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
 
 function OverviewTab() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {[
-          { label: 'إجمالي إيرادات اليوم', value: mockStats.dailyRevenue.toLocaleString() + ' د.ع', icon: DollarSign, trend: '+12.5%', color: 'emerald' },
-          { label: 'الرحلات النشطة', value: mockStats.activeTrips, icon: Clock, trend: 'مستقرة', color: 'blue' },
-          { label: 'حجوزات قيد الانتظار', value: mockStats.pendingBookings, icon: Users, trend: '+5', color: 'amber' },
-          { label: 'معدل الإشغال', value: mockStats.averageOccupancy + '%', icon: BarChart3, trend: '+2.1%', color: 'purple' },
+          { label: 'إيراد اليوم', value: mockStats.dailyRevenue.toLocaleString(), unit: 'د.ع', icon: DollarSign, trend: '+12.5%', color: 'emerald' },
+          { label: 'الرحلات', value: mockStats.activeTrips, unit: '', icon: Clock, trend: 'مستقر', color: 'blue' },
+          { label: 'انتظار', value: mockStats.pendingBookings, unit: '', icon: Users, trend: '+5', color: 'amber' },
+          { label: 'الإشغال', value: mockStats.averageOccupancy, unit: '%', icon: BarChart3, trend: '+2.1%', color: 'purple' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600`}>
-                <stat.icon className="w-6 h-6" />
+          <div key={i} className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className={`p-2.5 rounded-xl bg-${stat.color}-50 text-${stat.color}-600`}>
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <span className={`text-xs font-black ${stat.trend.startsWith('+') ? 'text-emerald-500' : 'text-gray-400'} px-2 py-1 rounded-full bg-gray-50`}>
+              <span className={`text-[10px] font-black ${stat.trend.startsWith('+') ? 'text-emerald-500' : 'text-gray-400'} px-2 py-1 rounded-full bg-gray-50`}>
                 {stat.trend}
               </span>
             </div>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">{stat.label}</p>
-            <p className="text-2xl font-black text-emerald-950 font-display">{stat.value}</p>
+            <p className="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">{stat.label}</p>
+            <p className="text-lg md:text-2xl font-black text-emerald-950 font-display">
+              {stat.value} <span className="text-xs md:text-sm font-medium opacity-50">{stat.unit}</span>
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Weekly Chart Placeholder */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-black text-xl text-emerald-950 font-display">نمو المبيعات الأسبوعي</h3>
-            <select className="bg-gray-50 border-none rounded-xl text-xs font-bold text-gray-500 px-4 py-2">
+        <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col min-h-[300px]">
+          <div className="flex justify-between items-center mb-6 md:mb-8">
+            <h3 className="font-black text-lg md:text-xl text-emerald-950 font-display">المبيعات الأسبوعية</h3>
+            <select className="bg-gray-50 border-none rounded-xl text-[10px] font-bold text-gray-500 px-3 py-1.5 h-10">
                <option>آخر 7 أيام</option>
                <option>آخر 30 يوم</option>
             </select>
           </div>
-          <div className="flex-1 flex items-end justify-between gap-4 h-48">
+          <div className="flex-1 flex items-end justify-between gap-2 md:gap-4 h-32 md:h-48">
              {mockStats.weeklyRevenue.map((d, i) => (
-               <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                  <div 
-                    className="w-full bg-emerald-100 rounded-t-xl relative group transition-all hover:bg-emerald-600"
-                    style={{ height: `${(d.value / 7000000) * 100}%` }}
-                  >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-950 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                       {d.value.toLocaleString()}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-gray-400">{d.day}</span>
-               </div>
+                <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
+                   <motion.div 
+                     initial={{ height: 0 }}
+                     animate={{ height: `${(d.value / 7000000) * 100}%` }}
+                     className="w-full bg-emerald-100 rounded-t-lg md:rounded-t-xl relative transition-all hover:bg-emerald-600 cursor-pointer"
+                   />
+                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-950 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      {d.value.toLocaleString()}
+                   </div>
+                   <span className="text-[10px] md:text-[10px] font-bold text-gray-400 rotate-45 lg:rotate-0 mt-2">{d.day.substring(0, 3)}</span>
+                </div>
              ))}
           </div>
         </div>
 
         {/* Recent Bookings */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-          <h3 className="font-black text-xl text-emerald-950 font-display mb-6">آخر الحجوزات</h3>
-          <div className="space-y-6">
+        <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100">
+          <h3 className="font-black text-lg md:text-xl text-emerald-950 font-display mb-6">آخر الحجوزات</h3>
+          <div className="space-y-5">
              {mockBookings.map((b) => (
-               <div key={b.id} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center font-bold text-emerald-700">
-                        {b.passengerName.charAt(0)}
-                     </div>
-                     <div>
-                        <p className="text-sm font-bold text-emerald-950">{b.passengerName}</p>
-                        <p className="text-[10px] font-bold text-gray-400">مقعد {b.seatNumber} • {b.paymentMethod}</p>
-                     </div>
-                  </div>
-                  <button className="p-2 text-gray-300 hover:text-emerald-600 transition-colors">
-                     <ChevronRight className="w-4 h-4" />
-                  </button>
-               </div>
+                <div key={b.id} className="flex items-center justify-between group">
+                   <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-emerald-50 rounded-full flex items-center justify-center font-black text-xs text-emerald-700">
+                         {b.passengerName.charAt(0)}
+                      </div>
+                      <div>
+                         <p className="text-sm font-bold text-emerald-950 line-clamp-1">{b.passengerName}</p>
+                         <p className="text-[10px] font-bold text-gray-400">مقعد {b.seatNumber} • {b.paymentMethod}</p>
+                      </div>
+                   </div>
+                   <button className="p-2 text-gray-300 hover:text-emerald-600 transition-colors">
+                      <ChevronRight className="w-4 h-4" />
+                   </button>
+                </div>
              ))}
           </div>
-          <button className="w-full mt-8 py-3 rounded-xl border-2 border-dashed border-gray-100 text-gray-400 font-bold text-sm hover:border-emerald-200 hover:text-emerald-600 transition-all">
-             عرض كافة الحجوزات
+          <button className="w-full mt-6 py-3 rounded-xl border-2 border-dashed border-gray-100 text-gray-400 font-bold text-xs hover:border-emerald-200 hover:text-emerald-600 transition-all">
+             عرض الكل
           </button>
         </div>
       </div>
@@ -218,152 +306,153 @@ function TripsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
          <div className="relative">
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" 
               placeholder="ابحث عن رحلة..." 
-              className="bg-white border-gray-100 rounded-2xl pr-10 pl-4 py-2 text-sm font-medium focus:ring-emerald-500 w-64 shadow-sm"
+              className="w-full md:w-64 bg-white border-gray-100 rounded-2xl pr-10 pl-4 py-2.5 text-sm font-medium focus:ring-emerald-500 shadow-sm"
             />
          </div>
-         <div className="flex gap-3">
-            <button className="bg-white border border-gray-100 px-4 py-2 rounded-2xl flex items-center gap-2 text-sm font-bold text-gray-500 hover:bg-gray-50 shadow-sm">
+         <div className="flex gap-2">
+            <button className="flex-1 md:flex-none justify-center bg-white border border-gray-100 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-bold text-gray-500 hover:bg-gray-50 shadow-sm transition-colors">
                <Filter className="w-4 h-4" /> تصفية
             </button>
             <button 
               onClick={() => setShowAddModal(true)}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-2xl flex items-center gap-2 text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+              className="flex-2 md:flex-none justify-center bg-emerald-600 text-white px-4 md:px-6 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
             >
-               <Plus className="w-4 h-4" /> إضافة رحلة جديدة
+               <Plus className="w-4 h-4" /> إضافة رحلة
             </button>
          </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-         <table className="w-full text-right">
-            <thead>
-               <tr className="bg-gray-50">
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">معرف الرحلة</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">المسار</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">وقت الانطلاق</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">الإشغال</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">السعر</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">الإجراء</th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-               {mockTrips.map(trip => (
-                 <tr key={trip.id} className="hover:bg-emerald-50/30 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs font-bold text-gray-400">#{trip.id.toUpperCase()}</td>
-                    <td className="px-6 py-4">
-                       <div className="flex items-center gap-2">
-                          <span className="font-bold text-emerald-950">{trip.departureCity}</span>
-                          <ArrowRight className="w-3 h-3 text-gray-300" />
-                          <span className="font-bold text-emerald-950">{trip.arrivalCity}</span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <div className="flex items-center gap-2 text-sm font-bold text-emerald-950">
-                          <Clock className="w-4 h-4 text-emerald-500" />
-                          {format(new Date(trip.departureTime), 'HH:mm - MM/dd')}
-                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                             <div 
-                               className="h-full bg-emerald-500" 
-                               style={{ width: `${((trip.availableSeats.length) / 40) * 100}%` }}
-                             ></div>
-                          </div>
-                          <span className="text-xs font-bold text-emerald-700">{trip.availableSeats.length}/40</span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-black text-emerald-950">{trip.price.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">د.ع</span></td>
-                    <td className="px-6 py-4">
-                       <div className="flex gap-2">
-                         <button className="text-gray-400 hover:text-emerald-600 text-xs font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">تعديل</button>
-                         <button className="text-gray-400 hover:text-red-600 text-xs font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">إلغاء</button>
-                       </div>
-                    </td>
+      <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+         <div className="overflow-x-auto overflow-y-visible">
+           <table className="w-full text-right">
+              <thead>
+                 <tr className="bg-gray-50/80">
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">المعرف</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">المسار</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">الانطلاق</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">الإشغال</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">السعر</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">الإجراء</th>
                  </tr>
-               ))}
-            </tbody>
-         </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                 {mockTrips.map(trip => (
+                   <tr key={trip.id} className="hover:bg-emerald-50/40 transition-colors group">
+                      <td className="px-6 py-4 font-mono text-[10px] font-bold text-gray-400 whitespace-nowrap">#{trip.id.toUpperCase()}</td>
+                      <td className="px-6 py-4">
+                         <div className="flex items-center gap-2 whitespace-nowrap">
+                            <span className="font-bold text-emerald-950 text-sm">{trip.departureCity}</span>
+                            <ArrowRight className="w-3 h-3 text-gray-300" />
+                            <span className="font-bold text-emerald-950 text-sm">{trip.arrivalCity}</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
+                            <Clock className="w-4 h-4 text-emerald-500 opacity-60" />
+                            {format(new Date(trip.departureTime), 'HH:mm')}
+                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                         <div className="flex items-center gap-3 min-w-[120px]">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                               <div 
+                                 className={cn(
+                                   "h-full transition-all duration-1000",
+                                   trip.availableSeats.length < 5 ? "bg-red-500" : "bg-emerald-500"
+                                 )} 
+                                 style={{ width: `${((trip.availableSeats.length) / 40) * 100}%` }}
+                               ></div>
+                            </div>
+                            <span className="text-[10px] font-black text-emerald-700">{trip.availableSeats.length}/40</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 font-black text-emerald-950 text-xs md:text-sm whitespace-nowrap">{trip.price.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">د.ع</span></td>
+                      <td className="px-6 py-4">
+                         <div className="flex gap-2">
+                           <button className="text-gray-400 hover:text-emerald-700 p-1.5 hover:bg-emerald-50 rounded-lg transition-colors"><Settings className="w-4 h-4" /></button>
+                           <button className="text-gray-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors"><XCircle className="w-4 h-4" /></button>
+                         </div>
+                      </td>
+                   </tr>
+                 ))}
+              </tbody>
+           </table>
+         </div>
       </div>
 
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-emerald-950/20 backdrop-blur-sm"
+              className="absolute inset-0 bg-emerald-950/40 backdrop-blur-md"
               onClick={() => setShowAddModal(false)}
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[2rem] p-8 max-w-2xl w-full relative z-10 shadow-2xl"
+              className="bg-white rounded-[2rem] p-6 md:p-10 max-w-2xl w-full relative z-10 shadow-2xl overflow-y-auto max-h-[90vh]"
             >
-              <h2 className="text-2xl font-black text-emerald-950 font-display mb-6">إضافة رحلة جديدة</h2>
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-black text-emerald-950 font-display">إضافة رحلة جديدة</h2>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-300 hover:text-emerald-950 transition-colors">
+                   <XCircle className="w-8 h-8" />
+                </button>
+              </div>
               
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 mb-8">
                  <div>
-                   <label className="block text-xs font-bold text-gray-400 mb-2">من</label>
-                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 flex-1">
+                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-1">مدينة الانطلاق</label>
+                   <select className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl p-4 text-sm font-bold text-emerald-950 focus:bg-white focus:border-emerald-100 transition-all outline-none appearance-none">
                      {mockCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                    </select>
                  </div>
                  <div>
-                   <label className="block text-xs font-bold text-gray-400 mb-2">إلى</label>
-                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 flex-1" defaultValue="أربيل">
+                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-1">مدينة الوصول</label>
+                   <select className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl p-4 text-sm font-bold text-emerald-950 focus:bg-white focus:border-emerald-100 transition-all outline-none appearance-none" defaultValue="أربيل">
                      {mockCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                    </select>
                  </div>
                  <div>
-                   <label className="block text-xs font-bold text-gray-400 mb-2">وقت الانطلاق</label>
-                   <input type="datetime-local" className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950" />
+                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-1">موعد الرحلة</label>
+                   <input type="datetime-local" className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl p-4 text-sm font-bold text-emerald-950 focus:bg-white focus:border-emerald-100 transition-all outline-none" />
                  </div>
                  <div>
-                   <label className="block text-xs font-bold text-gray-400 mb-2">الحافلة المخصصة</label>
-                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950">
-                     {mockBuses.map(b => <option key={b.id} value={b.id}>{b.plateNumber} ({b.type} - {b.totalSeats} مقعد)</option>)}
+                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 px-1">الحافلة</label>
+                   <select className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl p-4 text-sm font-bold text-emerald-950 focus:bg-white focus:border-emerald-100 transition-all outline-none appearance-none">
+                     {mockBuses.map(b => <option key={b.id} value={b.id}>{b.plateNumber} ({b.type})</option>)}
                    </select>
                  </div>
               </div>
 
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-8">
-                 <h3 className="text-sm font-bold text-emerald-950 mb-4 flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-600" /> التسعير الديناميكي (Dynamic Pricing)</h3>
-                 <div className="grid grid-cols-2 gap-4">
+              <div className="bg-emerald-50/50 p-6 md:p-8 rounded-[2rem] border border-emerald-100 mb-10">
+                 <h3 className="text-base font-black text-emerald-950 mb-5 flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-600" /> إعدادات التسعير</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-xs font-bold text-gray-400 mb-2">السعر الأساسي</label>
-                      <input type="number" defaultValue="25000" className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold text-emerald-950 focus:border-emerald-500 focus:ring-0" />
+                      <label className="block text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest mb-2 px-1">السعر الأساسي (د.ع)</label>
+                      <input type="number" defaultValue="25000" className="w-full bg-white border-2 border-emerald-50 rounded-2xl p-4 text-sm font-black text-emerald-950 focus:border-emerald-200 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-400 mb-2">سعر المواسم / الذروة</label>
-                      <input type="number" defaultValue="35000" className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold text-emerald-950 focus:border-emerald-500 focus:ring-0" />
+                      <label className="block text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest mb-2 px-1">سعر نهاية الأسبوع</label>
+                      <input type="number" defaultValue="35000" className="w-full bg-white border-2 border-emerald-50 rounded-2xl p-4 text-sm font-black text-emerald-950 focus:border-emerald-200 outline-none" />
                     </div>
-                 </div>
-                 <div className="mt-4 flex items-center justify-between bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
-                   <div>
-                     <p className="text-sm font-bold text-emerald-950 mb-1">خصم الحجز المبكر</p>
-                     <p className="text-xs text-gray-500">تطبيق خصم 10% قبل 48 ساعة من الانطلاق</p>
-                   </div>
-                   <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
-                     <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-sm"></div>
-                   </div>
                  </div>
               </div>
 
-              <div className="flex gap-4">
-                 <button className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95" onClick={() => setShowAddModal(false)}>
-                   نشر وإتاحة للحجز
+              <div className="flex flex-col md:flex-row gap-4 h-14">
+                 <button className="flex-1 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all" onClick={() => setShowAddModal(false)}>
+                   تأكيد ونشر الرحلة
                  </button>
-                 <button className="flex-1 bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50" onClick={() => setShowAddModal(false)}>
+                 <button className="md:w-32 bg-gray-50 text-gray-400 font-bold rounded-2xl hover:bg-gray-100 transition-all" onClick={() => setShowAddModal(false)}>
                    إلغاء
                  </button>
               </div>
@@ -503,9 +592,9 @@ function PosTab() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex gap-8">
-        <div className="w-1/3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col relative overflow-hidden">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col xl:flex-row gap-6 md:gap-8">
+        <div className="w-full xl:w-1/3 bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-sm flex flex-col relative overflow-hidden">
           {ticketIssued && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -588,20 +677,24 @@ function PosTab() {
           </div>
         </div>
 
-        <div className="flex-1 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+        <div className="flex-1 bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-sm">
             {selectedCity ? (
                <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-black text-emerald-950 font-display mb-4">الرحلات المتاحة إلى {selectedCity}</h3>
+                    <h3 className="text-lg font-black text-emerald-950 font-display mb-4 flex items-center justify-between">
+                      الرحلات إلى {selectedCity}
+                      <span className="text-[10px] bg-gray-50 text-gray-400 px-3 py-1 rounded-full font-bold">متاح اليوم ({availableTrips.length})</span>
+                    </h3>
                     {availableTrips.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {availableTrips.map(t => (
                           <div 
                             key={t.id} 
                             onClick={() => setSelectedTrip(t.id)}
-                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                              selectedTrip === t.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 hover:border-emerald-200'
-                            }`}
+                            className={cn(
+                              "p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                              selectedTrip === t.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-50 hover:border-emerald-200 bg-gray-50/30'
+                            )}
                           >
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm font-bold text-emerald-950 flex items-center gap-2">
@@ -680,16 +773,16 @@ function BoardingTab() {
   const trip = mockTrips.find(t => t.id === selectedTripId);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+    <div className="space-y-6 md:space-y-8 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-sm gap-4">
         <div>
-          <h2 className="text-xl font-black text-emerald-950 font-display">تدقيق الرحلات النشطة (Boarding)</h2>
-          <p className="text-sm font-bold text-gray-400 mt-1">امسح تذاكر الركاب قبل الصعود لتأكيد الحضور.</p>
+          <h2 className="text-xl md:text-2xl font-black text-emerald-950 font-display">تدقيق الرحلات والركاب</h2>
+          <p className="text-xs md:text-sm font-bold text-gray-400 mt-1">تأكيد حضور الركاب عبر مسح التذاكر آلياً.</p>
         </div>
         <select 
           value={selectedTripId} 
           onChange={(e) => setSelectedTripId(e.target.value)}
-          className="bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 min-w-[250px]"
+          className="w-full md:w-auto bg-gray-50 border-2 border-gray-50 rounded-xl p-3 text-sm font-bold text-emerald-950 min-w-[250px] outline-none"
         >
           {mockTrips.map(t => (
             <option key={t.id} value={t.id}>{t.departureCity} - {t.arrivalCity} ({format(new Date(t.departureTime), 'HH:mm')})</option>
@@ -697,10 +790,10 @@ function BoardingTab() {
         </select>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
         
         {/* Boarding List */}
-        <div className="w-full lg:w-1/3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col">
+        <div className="w-full lg:w-1/3 bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-sm flex flex-col order-2 lg:order-1">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-black text-xl text-emerald-950 font-display">قائمة الركاب</h3>
             <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">

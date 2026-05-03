@@ -14,10 +14,7 @@ import { twMerge } from 'tailwind-merge';
 import { getTrips, mockCities, getCompany, getBus, mockTrips } from './data/mock';
 import { Trip, Booking } from './types';
 import Dashboard from './components/Dashboard';
-
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from './lib/utils';
 
 // Mock User Session
 const MOCK_USER = { uid: 'u1', displayName: 'أحمد صالح', email: 'ahmed@example.com' };
