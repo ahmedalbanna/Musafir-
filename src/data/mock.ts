@@ -75,6 +75,28 @@ export const mockTrips: Trip[] = [
   }
 ];
 
+export const mockStats = {
+  dailyRevenue: 4850000,
+  activeTrips: 12,
+  pendingBookings: 24,
+  averageOccupancy: 84,
+  weeklyRevenue: [
+    { day: 'السيت', value: 3200000 },
+    { day: 'الأحد', value: 4100000 },
+    { day: 'الاثنين', value: 3800000 },
+    { day: 'الثلاثاء', value: 4500000 },
+    { day: 'الأربعاء', value: 5200000 },
+    { day: 'الخميس', value: 6800000 },
+    { day: 'الجمعة', value: 5900000 },
+  ]
+};
+
+export const mockBookings: Booking[] = [
+  { id: 'B1', tripId: 't1', userId: 'u1', passengerName: 'أحمد علي', seatNumber: 3, status: 'confirmed', paymentMethod: 'Shellen', createdAt: new Date().toISOString(), qrCode: 'QR1' },
+  { id: 'B2', tripId: 't1', userId: 'u2', passengerName: 'سارة حسن', seatNumber: 4, status: 'confirmed', paymentMethod: 'Shellen', createdAt: new Date().toISOString(), qrCode: 'QR2' },
+  { id: 'B3', tripId: 't2', userId: 'u3', passengerName: 'محمد جاسم', seatNumber: 1, status: 'confirmed', paymentMethod: 'Cash', createdAt: new Date().toISOString(), qrCode: 'QR3' },
+];
+
 export const getTrips = async (from: string, to: string, date: string): Promise<Trip[]> => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 800));

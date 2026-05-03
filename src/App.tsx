@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Bus, MapPin, Calendar, Search, User as UserIcon, 
   LogOut, Ticket as TicketIcon, ChevronRight, ArrowRight,
-  Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation
+  Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation,
+  LayoutDashboard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
@@ -12,6 +13,7 @@ import { twMerge } from 'tailwind-merge';
 
 import { getTrips, mockCities, getCompany, getBus, mockTrips } from './data/mock';
 import { Trip, Booking } from './types';
+import Dashboard from './components/Dashboard';
 
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -23,6 +25,7 @@ const MOCK_USER = { uid: 'u1', displayName: 'أحمد صالح', email: 'ahmed@e
 export default function App() {
   const [user, setUser] = useState<typeof MOCK_USER | null>(MOCK_USER);
   const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'TICKET' | 'BOOKINGS'>('HOME');
+  const [isOperatorMode, setIsOperatorMode] = useState(false);
   
   const [searchParams, setSearchParams] = useState({ 
     from: 'بغداد', 
@@ -79,8 +82,22 @@ export default function App() {
     setLoading(false);
   };
 
+  if (isOperatorMode) {
+    return <Dashboard onExit={() => setIsOperatorMode(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-gray-900 font-sans selection:bg-amber-200 selection:text-amber-900 overflow-x-hidden pb-24" dir="rtl">
+      {/* Role Switcher (Demo Only) */}
+      <div className="fixed bottom-6 left-6 z-[60]">
+        <button 
+          onClick={() => setIsOperatorMode(true)}
+          className="bg-emerald-950 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-2xl shadow-emerald-900/50 hover:bg-emerald-800 transition-all active:scale-95 flex items-center gap-2 border border-emerald-700/50"
+        >
+          <LayoutDashboard className="w-4 h-4" /> لوحة تحكم الشركات
+        </button>
+      </div>
+
       {/* Premium Minimal Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#F8F9FA]/80 backdrop-blur-xl border-b border-gray-200/50 px-6 py-4 flex items-center justify-between transition-all">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('HOME')}>
