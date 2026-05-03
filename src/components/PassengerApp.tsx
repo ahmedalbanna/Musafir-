@@ -13,6 +13,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../lib/utils';
 import { getTrips, mockCities, getCompany, getBus, mockTrips } from '../data/mock';
 import { Trip, Booking } from '../types';
+import TrackingMap from './TrackingMap';
 
 interface PassengerAppProps {
   user: { uid: string; displayName: string; email: string } | null;
@@ -22,7 +23,7 @@ interface PassengerAppProps {
 }
 
 export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator }: PassengerAppProps) {
-  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS'>('HOME');
+  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING'>('HOME');
   const [searchParams, setSearchParams] = useState({ 
     from: 'بغداد', 
     to: 'أربيل', 
@@ -538,10 +539,10 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
 
                <div className="flex gap-4">
                   <button 
-                    onClick={() => setView('HOME')}
-                    className="flex-1 h-16 bg-white border-2 border-gray-100 text-gray-900 rounded-2xl font-black text-sm flex items-center justify-center hover:bg-gray-50 transition-all active:scale-[0.98]"
+                    onClick={() => setView('TRACKING')}
+                    className="flex-1 h-16 bg-white border-2 border-gray-100 text-gray-900 rounded-2xl font-black text-sm flex items-center justify-center hover:bg-gray-50 transition-all active:scale-[0.98] gap-2"
                   >
-                    حفظ في الصور
+                    <MapPin className="w-4 h-4" /> تتبع الحافلة
                   </button>
                   <button 
                     onClick={() => setView('BOOKINGS')}
@@ -599,6 +600,46 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                         <p className="text-sm font-bold text-gray-500">لا توجد حجوزات حتى الآن</p>
                      </div>
                   )}
+               </div>
+            </motion.div>
+          )}
+
+          {/* TRACKING VIEW */}
+          {view === 'TRACKING' && selectedTrip && ticketData && (
+            <motion.div 
+               key="tracking"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="space-y-6 pb-20 h-[80vh] flex flex-col"
+            >
+               <div className="flex items-center justify-between pt-4">
+                  <button onClick={() => setView('SUCCESS')} className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <div className="text-center">
+                    <h2 className="font-black text-emerald-950 text-lg">تتبع الحافلة المباشر</h2>
+                    <p className="text-[10px] font-bold text-emerald-600 tracking-widest">{selectedTrip.departureCity} ← {selectedTrip.arrivalCity}</p>
+                  </div>
+                  <div className="w-10 h-10" />
+               </div>
+
+               <div className="flex-1 w-full bg-gray-50 rounded-[2rem] border border-gray-200 overflow-hidden relative shadow-sm">
+                  <TrackingMap departureCity={selectedTrip.departureCity} arrivalCity={selectedTrip.arrivalCity} />
+                  
+                  {/* Floating Info Card on Map */}
+                  <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-xl p-4 rounded-2xl border border-gray-100 shadow-xl z-[1000]">
+                    <div className="flex justify-between items-center">
+                       <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">الوقت المتبقي للوصول</p>
+                          <p className="font-black text-emerald-950 text-2xl font-display">2س 15د</p>
+                       </div>
+                       <div className="bg-emerald-50 px-3 py-2 rounded-xl text-center border border-emerald-100">
+                          <p className="text-[10px] font-bold text-emerald-600">السرعة</p>
+                          <p className="font-black text-emerald-900">95 <span className="text-[10px]">كم/س</span></p>
+                       </div>
+                    </div>
+                  </div>
                </div>
             </motion.div>
           )}
@@ -675,7 +716,27 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                      <button className="w-full flex items-center gap-4 text-emerald-950 font-bold hover:text-emerald-600 transition-colors">
                         <CreditCard className="w-5 h-5" /> طرق الدفع (شِلّن)
                      </button>
-                     <button className="w-full flex items-center gap-4 text-emerald-950 font-bold hover:text-emerald-600 transition-colors">
+                     <button 
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          if (!selectedTrip || !ticketData) {
+                            setSelectedTrip(mockTrips[0]);
+                            setTicketData({
+                              id: 'MOCK-123',
+                              tripId: mockTrips[0].id,
+                              userId: user?.uid || 'u1',
+                              passengerName: user?.displayName || 'ضيف',
+                              seatNumber: 5,
+                              status: 'confirmed',
+                              paymentMethod: 'Shellen',
+                              createdAt: new Date().toISOString(),
+                              qrCode: 'mock-qr'
+                            });
+                          }
+                          setView('TRACKING');
+                        }}
+                        className="w-full flex items-center gap-4 text-emerald-950 font-bold hover:text-emerald-600 transition-colors"
+                     >
                         <Map className="w-5 h-5" /> تتبع الحافلة
                      </button>
                   </div>
