@@ -376,55 +376,167 @@ function TripsTab() {
 }
 
 function FleetTab() {
+  const [showAddFleet, setShowAddFleet] = useState(false);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-       {mockBuses.map(bus => (
-         <div key={bus.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:bg-emerald-900 hover:border-emerald-900 transition-all duration-500">
-            <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mb-6 group-hover:bg-emerald-800 transition-colors">
-               <BusIcon className="w-10 h-10 text-emerald-600 group-hover:text-emerald-400" />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+         {mockBuses.map(bus => (
+           <div key={bus.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:bg-emerald-900 hover:border-emerald-900 transition-all duration-500">
+              <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mb-6 group-hover:bg-emerald-800 transition-colors">
+                 <BusIcon className="w-10 h-10 text-emerald-600 group-hover:text-emerald-400" />
+              </div>
+              <h3 className="font-black text-xl text-emerald-950 font-display mb-1 group-hover:text-white transition-colors">{bus.plateNumber}</h3>
+              <p className="text-emerald-600/60 font-bold text-sm mb-6 group-hover:text-emerald-400 transition-colors">باص {bus.type} • {bus.totalSeats} مقعد</p>
+              
+              <div className="w-full grid grid-cols-2 gap-4 pt-6 border-t border-gray-50 group-hover:border-emerald-800">
+                 <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">المخطط</p>
+                    <p className="font-bold text-emerald-950 group-hover:text-white flex justify-center items-center gap-1">
+                       {bus.layout === 'VIP (2+1)' ? (
+                          <><Star className="w-3 h-3 text-amber-500" /> VIP (2+1)</>
+                       ) : (
+                          <>ثنائي (2+2)</>
+                       )}
+                    </p>
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">الحالة</p>
+                    <p className="font-bold text-emerald-500">جاهز للرحلة</p>
+                 </div>
+              </div>
+              
+              <button className="mt-8 w-full py-3 bg-gray-50 rounded-xl text-sm font-bold text-emerald-950 hover:bg-emerald-100 transition-colors group-hover:bg-emerald-800 group-hover:text-white">
+                 التفاصيل والصيانة
+              </button>
+           </div>
+         ))}
+         <button 
+            onClick={() => setShowAddFleet(true)}
+            className="bg-gray-100/50 border-4 border-dashed border-gray-200 rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-gray-400 hover:border-emerald-200 hover:text-emerald-600 hover:bg-white transition-all group min-h-[350px]"
+         >
+            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-4 group-hover:bg-emerald-50 transition-colors">
+               <Plus className="w-8 h-8" />
             </div>
-            <h3 className="font-black text-xl text-emerald-950 font-display mb-1 group-hover:text-white transition-colors">{bus.plateNumber}</h3>
-            <p className="text-emerald-600/60 font-bold text-sm mb-6 group-hover:text-emerald-400 transition-colors">باص {bus.type} • {bus.totalSeats} مقعد</p>
-            
-            <div className="w-full grid grid-cols-2 gap-4 pt-6 border-t border-gray-50 group-hover:border-emerald-800">
-               <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">المخطط (Layout)</p>
-                  <p className="font-bold text-emerald-950 group-hover:text-white flex justify-center items-center gap-1">
-                     {bus.layout === 'VIP (2+1)' ? (
-                        <><Star className="w-3 h-3 text-amber-500" /> VIP (2+1)</>
-                     ) : (
-                        <>ثنائي (2+2)</>
-                     )}
-                  </p>
-               </div>
-               <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">الحالة</p>
-                  <p className="font-bold text-emerald-500">جاهز للرحلة</p>
-               </div>
-            </div>
-            
-            <button className="mt-8 w-full py-3 bg-gray-50 rounded-xl text-sm font-bold text-emerald-950 hover:bg-emerald-100 transition-colors group-hover:bg-emerald-800 group-hover:text-white">
-               التفاصيل والصيانة
-            </button>
-         </div>
-       ))}
-       <button className="bg-gray-100/50 border-4 border-dashed border-gray-200 rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-gray-400 hover:border-emerald-200 hover:text-emerald-600 hover:bg-white transition-all group min-h-[350px]">
-          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-4 group-hover:bg-emerald-50">
-             <Plus className="w-8 h-8" />
+            <span className="font-black text-lg">إضافة مخطط / حافلة</span>
+         </button>
+      </div>
+
+      <AnimatePresence>
+        {showAddFleet && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-emerald-950/20 backdrop-blur-sm"
+              onClick={() => setShowAddFleet(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[2rem] p-8 max-w-2xl w-full relative z-10 shadow-2xl"
+            >
+              <h2 className="text-2xl font-black text-emerald-950 font-display mb-6">إضافة حافلة جديدة للأسطول</h2>
+              
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">نوع الحافلة (الشركة المصنعة)</label>
+                   <input type="text" placeholder="مثال: Mercedes Tourismo" className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950" />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">رقم اللوحة</label>
+                   <input type="text" placeholder="بغداد 12345" className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950" />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">مخطط المقاعد</label>
+                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950">
+                     <option>ثنائي (2+2) - سعة 40 مقعد</option>
+                     <option>VIP (2+1) - سعة 30 مقعد</option>
+                     <option>مزدوج (طابقين) - سعة 60 مقعد</option>
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">سنة الصنع</label>
+                   <input type="number" defaultValue={2024} className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950" />
+                 </div>
+              </div>
+
+              <div className="flex gap-4">
+                 <button className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" onClick={() => setShowAddFleet(false)}>
+                   حفظ الحافلة
+                 </button>
+                 <button className="flex-1 bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50" onClick={() => setShowAddFleet(false)}>
+                   إلغاء
+                 </button>
+              </div>
+            </motion.div>
           </div>
-          <span className="font-black text-lg">إضافة مخطط / حافلة</span>
-       </button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function PosTab() {
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [passengerName, setPassengerName] = useState('');
+  const [ticketIssued, setTicketIssued] = useState(false);
   
+  const trip = mockTrips.find(t => t.id === selectedTrip);
+  const availableTrips = selectedCity ? mockTrips.filter(t => t.arrivalCity === selectedCity) : [];
+  
+  const handleIssueTicket = () => {
+    if (trip && selectedSeat && passengerName) {
+      setTicketIssued(true);
+      setTimeout(() => {
+        setTicketIssued(false);
+        setSelectedSeat(null);
+        setPassengerName('');
+        setSelectedTrip(null);
+        setSelectedCity('');
+      }, 5000);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex gap-8">
-        <div className="w-1/3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col">
+        <div className="w-1/3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col relative overflow-hidden">
+          {ticketIssued && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute inset-0 bg-emerald-600 z-10 flex flex-col items-center justify-center text-white p-6 text-center"
+            >
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="font-black text-2xl font-display mb-1">تم إصدار التذكرة!</h3>
+              <p className="text-emerald-100 font-bold mb-6">يمكنك طباعة التذكرة وتسليمها للمسافر</p>
+              <div className="bg-white text-emerald-950 p-4 rounded-xl w-full border border-emerald-100 mb-6">
+                <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100">
+                  <span className="text-xs text-gray-500 font-bold">رقم التذكرة</span>
+                  <span className="font-mono font-black text-sm">#TK-{Math.floor(1000 + Math.random() * 9000)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100">
+                  <span className="text-xs text-gray-500 font-bold">الرحلة</span>
+                  <span className="font-bold text-sm">{selectedCity}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500 font-bold">المقعد</span>
+                  <span className="font-black text-emerald-600 text-lg">{selectedSeat}</span>
+                </div>
+              </div>
+              <button onClick={() => setTicketIssued(false)} className="w-full bg-white text-emerald-600 font-bold py-3 rounded-xl hover:bg-emerald-50 transition-colors">
+                إصدار تذكرة جديدة
+              </button>
+            </motion.div>
+          )}
+
           <h2 className="text-xl font-black text-emerald-950 font-display mb-6">الحجز اليدوي (المكتب)</h2>
           
           <div className="space-y-4 flex-1">
@@ -433,7 +545,7 @@ function PosTab() {
                <select 
                  className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950"
                  value={selectedCity}
-                 onChange={(e) => setSelectedCity(e.target.value)}
+                 onChange={(e) => { setSelectedCity(e.target.value); setSelectedTrip(null); setSelectedSeat(null); }}
                >
                  <option value="">اختر الوجهة</option>
                  {mockCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -442,7 +554,13 @@ function PosTab() {
              
              <div>
                <label className="block text-xs font-bold text-gray-400 mb-2">اسم المسافر</label>
-               <input type="text" placeholder="أدخل اسم المسافر..." className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 placeholder-gray-300" />
+               <input 
+                 type="text" 
+                 value={passengerName}
+                 onChange={(e) => setPassengerName(e.target.value)}
+                 placeholder="أدخل اسم المسافر..." 
+                 className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 placeholder-gray-300" 
+               />
              </div>
              
              <div>
@@ -454,22 +572,97 @@ function PosTab() {
           <div className="pt-6 border-t border-gray-100 mt-6 space-y-4">
              <div className="flex justify-between items-center text-emerald-950 font-bold">
                <span>الإجمالي</span>
-               <span className="text-2xl font-black">0 <span className="text-sm text-gray-400">د.ع</span></span>
+               <span className="text-2xl font-black">{trip ? trip.price.toLocaleString() : 0} <span className="text-sm text-gray-400">د.ع</span></span>
              </div>
-             <button className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/20 opacity-50 cursor-not-allowed">
+             <button 
+                onClick={handleIssueTicket}
+                disabled={!trip || !selectedSeat || !passengerName}
+                className={`w-full font-bold py-4 rounded-2xl transition-all shadow-lg ${
+                  trip && selectedSeat && passengerName 
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/20 active:scale-95 hover:bg-emerald-700' 
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                }`}
+             >
                إصدار تذكرة وطباعة
              </button>
           </div>
         </div>
 
-        <div className="flex-1 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-center">
+        <div className="flex-1 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
             {selectedCity ? (
-               <div className="text-center">
-                  <p className="text-gray-500 font-bold mb-4">الرحلات المتاحة إلى <span className="text-emerald-600">{selectedCity}</span></p>
-                  <p className="text-sm text-gray-400">يرجى اختيار رحلة ومقعد لإتمام الحجز...</p>
+               <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black text-emerald-950 font-display mb-4">الرحلات المتاحة إلى {selectedCity}</h3>
+                    {availableTrips.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {availableTrips.map(t => (
+                          <div 
+                            key={t.id} 
+                            onClick={() => setSelectedTrip(t.id)}
+                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                              selectedTrip === t.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 hover:border-emerald-200'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-emerald-500" />
+                                {format(new Date(t.departureTime), 'HH:mm')}
+                              </span>
+                              <span className="text-xs font-black text-emerald-600">{t.price.toLocaleString()} د.ع</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-400">باص {t.busId.replace('bus-', '')} • متبقي {t.availableSeats.length} مقعد</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 bg-gray-50 rounded-2xl border border-gray-100">
+                        <p className="font-bold text-gray-500">لا توجد رحلات متاحة لهذه الوجهة اليوم</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {trip && (
+                    <div className="pt-6 border-t border-gray-100">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-black text-emerald-950 font-display">اختر المقعد</h3>
+                        <span className="text-xs font-bold px-3 py-1 bg-gray-100 rounded-lg text-gray-500">
+                          {trip.availableSeats.length} متاحة
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col items-center max-w-sm mx-auto">
+                        <div className="w-full flex justify-between px-8 mb-8 text-gray-300">
+                           <span className="text-xs font-bold">السائق</span>
+                           <span className="text-xs font-bold">الباب</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4 w-full">
+                          {Array.from({ length: 40 }).map((_, i) => {
+                            const seatNum = i + 1;
+                            const isAvailable = trip.availableSeats.includes(seatNum);
+                            const isSelected = selectedSeat === seatNum;
+                            return (
+                              <button
+                                key={seatNum}
+                                disabled={!isAvailable}
+                                onClick={() => setSelectedSeat(seatNum)}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                                  isSelected 
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110' 
+                                    : isAvailable 
+                                      ? 'bg-white text-emerald-950 hover:bg-emerald-100 border border-gray-200 shadow-sm' 
+                                      : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                                } ${i % 4 === 1 ? 'ml-6' : ''}`}
+                              >
+                                {seatNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                </div>
             ) : (
-                <div className="text-center text-gray-300">
+                <div className="text-center text-gray-300 h-full flex flex-col items-center justify-center">
                   <MapPin className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="font-bold text-lg">اختر الوجهة لعرض الرحلات</p>
                 </div>
@@ -482,109 +675,176 @@ function PosTab() {
 
 function BoardingTab() {
   const [scanStatus, setScanStatus] = useState<'IDLE' | 'SUCCESS' | 'ERROR'>('IDLE');
-  
+  const [selectedTripId, setSelectedTripId] = useState<string>('trip-2');
+
+  const trip = mockTrips.find(t => t.id === selectedTripId);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-12">
+    <div className="max-w-6xl mx-auto space-y-8">
+      <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+        <div>
+          <h2 className="text-xl font-black text-emerald-950 font-display">تدقيق الرحلات النشطة (Boarding)</h2>
+          <p className="text-sm font-bold text-gray-400 mt-1">امسح تذاكر الركاب قبل الصعود لتأكيد الحضور.</p>
+        </div>
+        <select 
+          value={selectedTripId} 
+          onChange={(e) => setSelectedTripId(e.target.value)}
+          className="bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 min-w-[250px]"
+        >
+          {mockTrips.map(t => (
+            <option key={t.id} value={t.id}>{t.departureCity} - {t.arrivalCity} ({format(new Date(t.departureTime), 'HH:mm')})</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
         
-        <div className="w-full md:w-1/2 flex flex-col items-center">
-           <h2 className="text-2xl font-black text-emerald-950 font-display mb-2">تدقيق التذاكر</h2>
-           <p className="text-gray-500 text-sm font-bold mb-8">قم بمسح رمز الـ QR الخاص بالمسافر</p>
-           
-           <div className="w-64 h-64 bg-gray-900 rounded-3xl relative overflow-hidden mb-6 shadow-xl shadow-gray-900/10 border-4 border-gray-900">
-              {/* Fake camera feed / scanner overlay */}
-              <div className="absolute inset-x-8 inset-y-8 border-2 border-emerald-500/50 rounded-xl"></div>
-              <motion.div 
-                animate={{ top: ['10%', '90%', '10%'] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                className="absolute left-8 right-8 h-0.5 bg-emerald-400 shadow-[0_0_8px_2px_#34d399]"
-              ></motion.div>
-              <div className="absolute bottom-4 left-0 right-0 text-center text-xs font-bold text-white/50 tracking-widest uppercase">
-                 Camera Active
+        {/* Boarding List */}
+        <div className="w-full lg:w-1/3 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-black text-xl text-emerald-950 font-display">قائمة الركاب</h3>
+            <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">
+              {mockBookings.filter(b => b.tripId === selectedTripId).length} ركاب
+            </span>
+          </div>
+          
+          <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            {mockBookings.filter(b => b.tripId === selectedTripId).map((b, i) => (
+              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-50 bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${i % 2 === 0 ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-gray-300'}`}></div>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-950">{b.passengerName}</p>
+                    <p className="text-[10px] font-bold text-gray-400">مقعد {b.seatNumber}</p>
+                  </div>
+                </div>
+                {i % 2 === 0 && (
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">صعد</span>
+                )}
               </div>
-           </div>
-           
-           <div className="flex gap-4 w-full">
-              <button 
-                onClick={() => setScanStatus('SUCCESS')}
-                className="flex-1 bg-emerald-50 text-emerald-700 font-bold py-3 rounded-xl border border-emerald-200 hover:bg-emerald-100"
-              >
-                محاكاة مسح (مقبول)
-              </button>
-              <button 
-                onClick={() => setScanStatus('ERROR')}
-                className="flex-1 bg-red-50 text-red-700 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-100"
-              >
-                محاكاة مسح (مرفوض)
-              </button>
-           </div>
+            ))}
+            
+            {mockBookings.filter(b => b.tripId === selectedTripId).length === 0 && (
+              <div className="text-center py-8 text-gray-400 font-bold text-sm">
+                لا توجد حجوزات لهذه الرحلة
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="w-full md:w-1/2 bg-gray-50 border border-gray-100 rounded-[2rem] p-8 flex flex-col items-center justify-center min-h-[400px]">
-           {scanStatus === 'IDLE' && (
-             <div className="text-center text-gray-400">
-                <QrCode className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="font-bold text-lg text-gray-500 mb-1">في انتظار المسح...</p>
-                <p className="text-sm">قم بتوجيه الكاميرا نحو التذكرة</p>
-             </div>
-           )}
-           
-           {scanStatus === 'SUCCESS' && (
-             <motion.div 
-               initial={{ scale: 0.9, opacity: 0 }}
-               animate={{ scale: 1, opacity: 1 }}
-               className="w-full bg-white p-6 rounded-3xl shadow-sm border border-emerald-100"
-             >
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                   <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <h3 className="text-center font-black text-xl text-emerald-950 mb-6 font-display">تذكرة صالحة</h3>
+        {/* Scanner */}
+        <div className="w-full lg:w-2/3 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-12">
+          
+          <div className="w-full flex-1 flex flex-col items-center justify-center">
+            <h2 className="text-xl font-black text-emerald-950 font-display mb-2">ماسح التذاكر (QR)</h2>
+            <p className="text-gray-500 text-sm font-bold mb-8 text-center">قم بتوجيه كاميرا جهازك أو جهاز المسح نحو الدائرة لتدقيق التذكرة</p>
+            
+             <div className="w-64 h-64 bg-gray-900 rounded-[2.5rem] relative overflow-hidden mb-8 shadow-xl shadow-gray-900/10 border-[6px] border-emerald-950">
+                <div className="absolute inset-x-8 inset-y-8 border-2 border-emerald-500/30 rounded-2xl"></div>
                 
-                <div className="space-y-4">
-                   <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                     <span className="text-xs font-bold text-gray-400">المسافر</span>
-                     <span className="font-bold text-gray-900 text-sm">أحمد علي</span>
-                   </div>
-                   <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                     <span className="text-xs font-bold text-gray-400">الرحلة</span>
-                     <span className="font-bold text-gray-900 text-sm">بغداد - أربيل</span>
-                   </div>
-                   <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                     <span className="text-xs font-bold text-gray-400">رقم المقعد</span>
-                     <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-lg">3</span>
-                   </div>
-                </div>
-                
-                <button 
-                  onClick={() => setScanStatus('IDLE')}
-                  className="w-full mt-8 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700"
-                >
-                  تأكيد الصعود التام
-                </button>
-             </motion.div>
-           )}
+                {scanStatus === 'IDLE' && (
+                  <motion.div 
+                    animate={{ top: ['10%', '90%', '10%'] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                    className="absolute left-6 right-6 h-1 bg-emerald-400 shadow-[0_0_12px_3px_#34d399] rounded-full z-10"
+                  ></motion.div>
+                )}
 
-           {scanStatus === 'ERROR' && (
-             <motion.div 
-               initial={{ scale: 0.9, opacity: 0 }}
-               animate={{ scale: 1, opacity: 1 }}
-               className="w-full text-center"
-             >
-                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                   <XCircle className="w-10 h-10" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                  <QrCode className="w-24 h-24 text-white" />
                 </div>
-                <h3 className="font-black text-2xl text-red-950 mb-2 font-display">تذكرة غير صالحة</h3>
-                <p className="text-red-700 font-bold text-sm mb-8 px-6 bg-red-50 py-3 rounded-xl border border-red-100">
-                  التذكرة ممسوحة مسبقاً أو غير موجودة بالنظام
-                </p>
+             </div>
+             
+             <div className="flex gap-4 w-full max-w-xs">
                 <button 
-                  onClick={() => setScanStatus('IDLE')}
-                  className="bg-white border-2 border-gray-200 text-gray-600 font-bold px-8 py-3 rounded-xl hover:border-gray-300"
+                  onClick={() => setScanStatus('SUCCESS')}
+                  className="flex-1 bg-emerald-50 text-emerald-700 font-bold py-3 rounded-xl border border-emerald-200 hover:bg-emerald-100"
                 >
-                  مسح تذكرة أخرى
+                  محاكاة (مقبول)
                 </button>
-             </motion.div>
-           )}
+                <button 
+                  onClick={() => setScanStatus('ERROR')}
+                  className="flex-1 bg-red-50 text-red-700 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-100"
+                >
+                  محاكاة (مرفوض)
+                </button>
+             </div>
+          </div>
+
+          <div className="w-full md:w-80 bg-gray-50 border border-gray-100 rounded-[2rem] p-6 flex flex-col items-center justify-center min-h-[350px]">
+             {scanStatus === 'IDLE' && (
+               <div className="text-center text-gray-400">
+                  <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="font-bold text-lg text-gray-500 mb-1">في انتظار المسح</p>
+                  <p className="text-sm">نتائج المسح ستظهر هنا</p>
+               </div>
+             )}
+             
+             {scanStatus === 'SUCCESS' && (
+               <motion.div 
+                 initial={{ scale: 0.9, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className="w-full"
+               >
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                     <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-center font-black text-xl text-emerald-950 mb-6 font-display">تذكرة صالحة</h3>
+                  
+                  <div className="space-y-4 bg-white p-4 rounded-2xl border border-emerald-100">
+                     <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                       <span className="text-xs font-bold text-gray-400">المسافر</span>
+                       <span className="font-bold text-emerald-950 text-sm">أحمد علي</span>
+                     </div>
+                     <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                       <span className="text-xs font-bold text-gray-400">الرحلة</span>
+                       <span className="font-bold text-emerald-950 text-sm">{trip?.departureCity} - {trip?.arrivalCity}</span>
+                     </div>
+                     <div className="flex justify-between items-center">
+                       <span className="text-xs font-bold text-gray-400">رقم المقعد</span>
+                       <span className="font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl text-lg">3</span>
+                     </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => setScanStatus('IDLE')}
+                    className="w-full mt-6 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+                  >
+                    تأكيد صعود الراكب
+                  </button>
+               </motion.div>
+             )}
+
+             {scanStatus === 'ERROR' && (
+               <motion.div 
+                 initial={{ scale: 0.9, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className="w-full text-center"
+               >
+                  <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                     <XCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className="font-black text-xl text-red-950 mb-4 font-display">تذكرة غير صالحة</h3>
+                  
+                  <div className="bg-red-50 p-4 rounded-2xl border border-red-100 mb-6 text-right">
+                    <p className="text-red-700 font-bold text-sm">
+                      سبب الرفض:
+                      <br/>
+                      <span className="text-red-900 font-black mt-1 block">التذكرة ممسوحة مسبقاً في الساعة 08:15 ص</span>
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => setScanStatus('IDLE')}
+                    className="w-full bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all"
+                  >
+                    مسح تذكرة أخرى
+                  </button>
+               </motion.div>
+             )}
+          </div>
         </div>
       </div>
     </div>
