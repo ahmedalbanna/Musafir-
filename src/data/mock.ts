@@ -17,9 +17,9 @@ export const mockCompanies: Company[] = [
 ];
 
 export const mockBuses: Bus[] = [
-  { id: 'b1', companyId: 'comp1', plateNumber: 'A-1234', type: 'VIP', totalSeats: 30, layout: '2+1' },
-  { id: 'b2', companyId: 'comp1', plateNumber: 'A-5678', type: 'Standard', totalSeats: 45, layout: '2+2' },
-  { id: 'b3', companyId: 'comp2', plateNumber: 'B-9012', type: 'Business', totalSeats: 35, layout: '2+1' },
+  { id: 'b1', companyId: 'comp1', plateNumber: 'A-1234', type: 'VIP', totalSeats: 30, layout: '2+1', amenities: ['Wi-Fi', 'Charging', 'AC', 'Snack'] },
+  { id: 'b2', companyId: 'comp1', plateNumber: 'A-5678', type: 'Standard', totalSeats: 45, layout: '2+2', amenities: ['AC'] },
+  { id: 'b3', companyId: 'comp2', plateNumber: 'B-9012', type: 'Business', totalSeats: 35, layout: '2+1', amenities: ['Wi-Fi', 'Charging', 'AC'] },
 ];
 
 const tomorrow = addDays(new Date(), 1);

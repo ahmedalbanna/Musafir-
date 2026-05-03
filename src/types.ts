@@ -18,6 +18,7 @@ export interface Bus {
   type: 'Standard' | 'VIP' | 'Business';
   totalSeats: number;
   layout: string; // e.g., "2+2"
+  amenities?: string[]; // e.g., ["wifi", "charging", "ac", "snack"]
 }
 
 export interface Trip {

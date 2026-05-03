@@ -5,13 +5,13 @@ import {
   LogOut, Ticket as TicketIcon, ChevronRight, ArrowRight,
   Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation,
   LayoutDashboard, Lock, CheckCircle, Home, History, Bell,
-  Menu, X, Filter, SlidersHorizontal, Map
+  Menu, X, Filter, SlidersHorizontal, Map, Wifi, Zap, Wind, Coffee
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../lib/utils';
-import { getTrips, mockCities, getCompany, getBus, mockTrips } from '../data/mock';
+import { getTrips, mockCities, getCompany, getBus, mockTrips, mockCompanies } from '../data/mock';
 import { Trip, Booking } from '../types';
 import TrackingMap from './TrackingMap';
 
@@ -21,6 +21,13 @@ interface PassengerAppProps {
   onLogout: () => void;
   onLaunchOperator: () => void;
 }
+
+const AMENITIES = [
+  { id: 'Wi-Fi', icon: Wifi, label: 'واي فاي' },
+  { id: 'Charging', icon: Zap, label: 'شحن USB' },
+  { id: 'AC', icon: Wind, label: 'تكيف' },
+  { id: 'Snack', icon: Coffee, label: 'وجبة خفيفة' },
+];
 
 export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator }: PassengerAppProps) {
   const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING'>('HOME');
@@ -37,6 +44,51 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [ticketData, setTicketData] = useState<Booking | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Filter States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    maxPrice: 60000,
+    timeRange: 'all' as 'all' | 'morning' | 'afternoon' | 'night',
+    companies: [] as string[],
+    amenities: [] as string[],
+    busType: 'all' as 'all' | 'VIP' | 'Standard' | 'Business',
+    maxDuration: 10 // in hours
+  });
+
+  const filteredTrips = trips.filter(trip => {
+    const bus = getBus(trip.busId);
+    
+    // Price Filter
+    if (trip.price > filters.maxPrice) return false;
+
+    // Time Filter
+    const depDate = parseISO(trip.departureTime);
+    const arrDate = parseISO(trip.arrivalTime);
+    const hour = depDate.getHours();
+    if (filters.timeRange === 'morning' && (hour < 5 || hour >= 12)) return false;
+    if (filters.timeRange === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+    if (filters.timeRange === 'night' && (hour < 18 && hour >= 5)) return false;
+
+    // Duration Filter (Duration in hours)
+    const durationHours = (arrDate.getTime() - depDate.getTime()) / (1000 * 60 * 60);
+    if (durationHours > filters.maxDuration) return false;
+
+    // Company Filter
+    if (filters.companies.length > 0 && !filters.companies.includes(trip.companyId)) return false;
+
+    // Amenities Filter
+    if (filters.amenities.length > 0) {
+      const busAmenities = bus?.amenities || [];
+      const hasAllAmenities = filters.amenities.every(a => busAmenities.includes(a));
+      if (!hasAllAmenities) return false;
+    }
+
+    // Bus Type Filter
+    if (filters.busType !== 'all' && bus?.type !== filters.busType) return false;
+
+    return true;
+  });
 
   const handleSearch = async () => {
     setLoading(true);
@@ -231,14 +283,29 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                     <h2 className="font-black text-emerald-950 text-lg">{searchParams.from} ← {searchParams.to}</h2>
                     <p className="text-[10px] font-bold text-gray-400">{format(new Date(searchParams.date), 'dd MMMM', { locale: ar })}</p>
                   </div>
-                  <button className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                  <button 
+                    onClick={() => setIsFilterOpen(true)}
+                    className={cn(
+                      "w-10 h-10 rounded-full bg-white border flex items-center justify-center transition-all",
+                      isFilterOpen ? "border-emerald-600 text-emerald-600 bg-emerald-50" : "border-gray-100 text-gray-400"
+                    )}
+                  >
                     <Filter className="w-4 h-4" />
                   </button>
                </div>
 
                <div className="space-y-4">
-                  {trips.length > 0 ? trips.map((trip, idx) => {
+                  {filteredTrips.length > 0 ? filteredTrips.map((trip, idx) => {
                     const company = getCompany(trip.companyId);
+                    const bus = getBus(trip.busId);
+                    
+                    const depDate = parseISO(trip.departureTime);
+                    const arrDate = parseISO(trip.arrivalTime);
+                    const diffMs = arrDate.getTime() - depDate.getTime();
+                    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const duration = `${diffHrs}س ${diffMins}د`;
+                    
                     return (
                       <motion.div 
                         key={trip.id}
@@ -256,7 +323,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                                <div>
                                   <h4 className="font-black text-emerald-950 text-sm">{company?.name}</h4>
                                   <div className="flex items-center text-[10px] text-amber-500 font-black">
-                                    <Star className="w-3 h-3 fill-amber-500 ml-1" /> {company?.rating} (VIP)
+                                    <Star className="w-3 h-3 fill-amber-500 ml-1" /> {company?.rating} ({bus?.type})
                                   </div>
                                </div>
                             </div>
@@ -267,7 +334,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
 
                          <div className="flex items-center justify-between relative py-2">
                             <div className="flex-1 flex flex-col items-center">
-                               <span className="text-2xl font-black text-emerald-950 font-display leading-none">08:00</span>
+                               <span className="text-2xl font-black text-emerald-950 font-display leading-none">{format(parseISO(trip.departureTime), 'HH:mm')}</span>
                                <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase">انطلاق</span>
                             </div>
 
@@ -277,19 +344,28 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                                      <Bus className="w-4 h-4 text-emerald-500" />
                                   </div>
                                </div>
-                               <span className="text-[9px] font-black text-emerald-600/60 tracking-widest">4س 30د</span>
+                               <span className="text-[9px] font-black text-emerald-600/60 tracking-widest">{duration}</span>
                             </div>
 
                             <div className="flex-1 flex flex-col items-center">
-                               <span className="text-2xl font-black text-gray-300 font-display leading-none">12:30</span>
+                               <span className="text-2xl font-black text-gray-300 font-display leading-none">{format(parseISO(trip.arrivalTime), 'HH:mm')}</span>
                                <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase">وصول</span>
                             </div>
                          </div>
                          
                          <div className="flex justify-between items-center border-t border-gray-50 pt-4">
-                            <div className="flex items-center gap-1.5">
-                               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                               <span className="text-[10px] font-bold text-emerald-700">متاح {trip.availableSeats.length} مقعد</span>
+                            <div className="flex items-center gap-3">
+                               <div className="flex items-center gap-1.5">
+                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                 <span className="text-[10px] font-bold text-emerald-700">متاح {trip.availableSeats.length} مقعد</span>
+                               </div>
+                               <div className="flex gap-1.5 border-r border-gray-100 pr-3">
+                                  {bus?.amenities?.slice(0, 3).map(a => {
+                                    const amenity = AMENITIES.find(am => am.id === a);
+                                    if (!amenity) return null;
+                                    return <amenity.icon key={a} className="w-3 h-3 text-gray-300" />
+                                  })}
+                               </div>
                             </div>
                             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">احجز الآن →</div>
                          </div>
@@ -301,7 +377,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                           <Search className="w-10 h-10" />
                        </div>
                        <h3 className="font-black text-emerald-950">لا توجد رحلات</h3>
-                       <p className="text-gray-400 text-sm">حاول تغيير التاريخ أو المسار</p>
+                       <p className="text-gray-400 text-sm">حاول تغيير التاريخ أو خيارات التصفية</p>
                     </div>
                   )}
                </div>
@@ -643,11 +719,195 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                </div>
             </motion.div>
           )}
-
         </AnimatePresence>
       </main>
 
-      {/* Persistent Bottom Tab Bar */}
+      {/* Advanced Filter Drawer */}
+      <AnimatePresence>
+        {isFilterOpen && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setIsFilterOpen(false)}
+               className="fixed inset-0 z-[60] bg-emerald-950/40 backdrop-blur-sm"
+            />
+            <motion.div 
+               initial={{ y: '100%' }}
+               animate={{ y: 0 }}
+               exit={{ y: '100%' }}
+               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+               className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[3rem] shadow-2xl p-8 max-h-[85vh] overflow-y-auto outline-none"
+            >
+               <div className="flex justify-between items-center mb-8 sticky top-0 bg-white z-10 pb-4 border-b border-gray-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                      <SlidersHorizontal className="w-5 h-5" />
+                    </div>
+                    <h2 className="font-display font-black text-2xl text-emerald-950">تصفية النتائج</h2>
+                  </div>
+                  <button 
+                    onClick={() => setFilters({
+                      maxPrice: 60000,
+                      timeRange: 'all',
+                      companies: [],
+                      amenities: [],
+                      busType: 'all',
+                      maxDuration: 10
+                    })}
+                    className="text-emerald-600 text-xs font-black uppercase tracking-widest hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    إعادة ضبط
+                  </button>
+               </div>
+
+               <div className="space-y-8 pb-10">
+                  {/* Price Range */}
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">السعر الأقصى</label>
+                        <span className="font-black text-emerald-950">{filters.maxPrice.toLocaleString()} <span className="text-[10px]">د.ع</span></span>
+                     </div>
+                     <input 
+                        type="range" 
+                        min="20000" 
+                        max="100000" 
+                        step="5000"
+                        value={filters.maxPrice}
+                        onChange={(e) => setFilters({...filters, maxPrice: parseInt(e.target.value)})}
+                        className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                     />
+                  </div>
+
+                  {/* Trip Duration */}
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">مدة الرحلة القصوى</label>
+                        <span className="font-black text-emerald-950">{filters.maxDuration} <span className="text-[10px]">ساعات</span></span>
+                     </div>
+                     <input 
+                        type="range" 
+                        min="2" 
+                        max="12" 
+                        step="1"
+                        value={filters.maxDuration}
+                        onChange={(e) => setFilters({...filters, maxDuration: parseInt(e.target.value)})}
+                        className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                     />
+                  </div>
+
+                  {/* Departure Time */}
+                  <div className="space-y-4">
+                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 block">وقت الانطلاق</label>
+                     <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { id: 'all', label: 'كل الأوقات' },
+                          { id: 'morning', label: 'صباحاً (5-12)' },
+                          { id: 'afternoon', label: 'ظهراً (12-6)' },
+                          { id: 'night', label: 'ليلاً (6-5)' },
+                        ].map(t => (
+                          <button 
+                            key={t.id}
+                            onClick={() => setFilters({...filters, timeRange: t.id as any})}
+                            className={cn(
+                              "py-4 rounded-2xl font-bold text-sm transition-all border",
+                              filters.timeRange === t.id ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50"
+                            )}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div className="space-y-4">
+                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 block">المميزات</label>
+                     <div className="flex flex-wrap gap-3">
+                        {AMENITIES.map(a => (
+                          <button 
+                            key={a.id}
+                            onClick={() => {
+                              const newAmenities = filters.amenities.includes(a.id) 
+                                ? filters.amenities.filter(item => item !== a.id)
+                                : [...filters.amenities, a.id];
+                              setFilters({...filters, amenities: newAmenities});
+                            }}
+                            className={cn(
+                              "px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all",
+                              filters.amenities.includes(a.id) ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-gray-400 border-gray-100"
+                            )}
+                          >
+                             <a.icon className="w-4 h-4" />
+                             <span className="text-xs font-bold">{a.label}</span>
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  {/* Bus Type */}
+                  <div className="space-y-4">
+                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 block">نوع الحافلة</label>
+                     <div className="flex gap-3">
+                        {['all', 'VIP', 'Business', 'Standard'].map(type => (
+                          <button 
+                            key={type}
+                            onClick={() => setFilters({...filters, busType: type as any})}
+                            className={cn(
+                              "flex-1 py-3 rounded-2xl font-bold text-xs transition-all border",
+                              filters.busType === type ? "bg-emerald-950 text-white border-emerald-950" : "bg-white text-gray-400 border-gray-100 hover:bg-gray-50"
+                            )}
+                          >
+                            {type === 'all' ? 'الكل' : type}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  {/* Companies */}
+                  <div className="space-y-4">
+                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 block">شركات النقل</label>
+                     <div className="space-y-2">
+                        {mockCompanies.map(c => (
+                          <button 
+                            key={c.id}
+                            onClick={() => {
+                              const newCompanies = filters.companies.includes(c.id) 
+                                ? filters.companies.filter(item => item !== c.id)
+                                : [...filters.companies, c.id];
+                              setFilters({...filters, companies: newCompanies});
+                            }}
+                            className={cn(
+                              "w-full p-4 rounded-2xl flex items-center justify-between border transition-all",
+                              filters.companies.includes(c.id) ? "bg-emerald-50 text-emerald-950 border-emerald-200" : "bg-white text-gray-500 border-gray-100"
+                            )}
+                          >
+                             <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">{c.logo}</div>
+                                <span className="font-bold text-sm">{c.name}</span>
+                             </div>
+                             {filters.companies.includes(c.id) && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+
+               <div className="sticky bottom-0 bg-white pt-4 pb-2">
+                  <button 
+                    onClick={() => setIsFilterOpen(false)}
+                    className="w-full h-16 bg-emerald-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all"
+                  >
+                    عرض {filteredTrips.length} رحلة
+                  </button>
+               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Side Menu Overlay */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-100 px-8 py-3 flex justify-between items-center shadow-lg pb-safe">
         {[
           { id: 'HOME', icon: Home, label: 'الرئيسية' },
