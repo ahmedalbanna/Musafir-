@@ -40,10 +40,11 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
   
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [passengersData, setPassengersData] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
-  const [ticketData, setTicketData] = useState<Booking | null>(null);
+  const [ticketData, setTicketData] = useState<Booking[] | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>(defaultPreferences);
@@ -120,20 +121,21 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    if (selectedTrip && selectedSeat && user) {
-      const newBooking: Booking = {
-        id: `BKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+    if (selectedTrip && selectedSeats.length > 0 && user) {
+      const groupId = `BKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+      const newBookings: Booking[] = selectedSeats.map(seat => ({
+        id: `${groupId}-${seat}`,
         tripId: selectedTrip.id,
         userId: user.uid,
-        passengerName: user.displayName,
-        seatNumber: selectedSeat,
+        passengerName: passengersData[seat] || user.displayName, // primary or companions
+        seatNumber: seat,
         status: 'confirmed',
         paymentMethod: 'Shellen Balance',
         createdAt: new Date().toISOString(),
-        qrCode: `TKT-${selectedTrip.id}-${selectedSeat}-${Date.now()}`
-      };
-      setMyBookings(prev => [newBooking, ...prev]);
-      setTicketData(newBooking);
+        qrCode: `TKT-${selectedTrip.id}-${seat}-${Date.now()}`
+      }));
+      setMyBookings(prev => [...newBookings, ...prev]);
+      setTicketData(newBookings);
       setView('SUCCESS');
     }
     setLoading(false);
@@ -438,14 +440,22 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
 
                   <div className="grid grid-cols-2 gap-x-12 gap-y-4">
                      <div className="grid grid-cols-2 gap-4">
-                        {[1, 2, 5, 6, 9, 10, 13, 14, 17, 18].map(s => (
+                         {[1, 2, 5, 6, 9, 10, 13, 14, 17, 18].map(s => (
                            <button 
                              key={s}
                              disabled={!selectedTrip.availableSeats.includes(s)}
-                             onClick={() => setSelectedSeat(selectedSeat === s ? null : s)}
+                             onClick={() => {
+                               if (selectedSeats.includes(s)) {
+                                 setSelectedSeats(selectedSeats.filter(seat => seat !== s));
+                               } else {
+                                 if (selectedSeats.length < 5) {
+                                   setSelectedSeats([...selectedSeats, s]);
+                                 }
+                               }
+                             }}
                              className={cn(
                                "w-12 h-14 rounded-t-xl rounded-b-md font-black text-sm transition-all relative border-b-4",
-                               selectedSeat === s ? "bg-emerald-500 text-white border-emerald-700 shadow-lg scale-110 z-10" : 
+                               selectedSeats.includes(s) ? "bg-emerald-500 text-white border-emerald-700 shadow-lg scale-110 z-10" : 
                                selectedTrip.availableSeats.includes(s) ? "bg-gray-50 text-gray-700 border-gray-200" : 
                                "bg-gray-100 text-gray-300 border-gray-200 opacity-40 cursor-not-allowed"
                              )}
@@ -459,10 +469,18 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                            <button 
                              key={s}
                              disabled={!selectedTrip.availableSeats.includes(s)}
-                             onClick={() => setSelectedSeat(selectedSeat === s ? null : s)}
+                             onClick={() => {
+                               if (selectedSeats.includes(s)) {
+                                 setSelectedSeats(selectedSeats.filter(seat => seat !== s));
+                               } else {
+                                 if (selectedSeats.length < 5) {
+                                   setSelectedSeats([...selectedSeats, s]);
+                                 }
+                               }
+                             }}
                              className={cn(
                                "w-12 h-14 rounded-t-xl rounded-b-md font-black text-sm transition-all relative border-b-4",
-                               selectedSeat === s ? "bg-emerald-500 text-white border-emerald-700 shadow-lg scale-110 z-10" : 
+                               selectedSeats.includes(s) ? "bg-emerald-500 text-white border-emerald-700 shadow-lg scale-110 z-10" : 
                                selectedTrip.availableSeats.includes(s) ? "bg-gray-50 text-gray-700 border-gray-200" : 
                                "bg-gray-100 text-gray-300 border-gray-200 opacity-40 cursor-not-allowed"
                              )}
@@ -484,15 +502,15 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-40 pb-safe">
                   <div className="max-w-md mx-auto flex items-center justify-between">
                      <div>
-                        <p className="text-[10px] font-black text-emerald-600/50 uppercase tracking-widest">إجمالي الحجز</p>
-                        <p className="text-2xl font-black text-emerald-950 font-display">{selectedSeat ? selectedTrip.price.toLocaleString() : '0'} <span className="text-sm">د.ع</span></p>
+                        <p className="text-[10px] font-black text-emerald-600/50 uppercase tracking-widest">إجمالي الحجز ({selectedSeats.length})</p>
+                        <p className="text-2xl font-black text-emerald-950 font-display">{(selectedSeats.length > 0 ? selectedSeats.length * selectedTrip.price : 0).toLocaleString()} <span className="text-sm">د.ع</span></p>
                      </div>
                      <button 
-                       disabled={!selectedSeat}
+                       disabled={selectedSeats.length === 0}
                        onClick={() => setView('CHECKOUT')}
                        className="bg-emerald-950 text-white h-14 px-8 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-emerald-950/20 active:scale-95 transition-all disabled:opacity-20"
                      >
-                       تأكيد و حجز <ChevronRight className="w-4 h-4" />
+                       متابعة <ChevronRight className="w-4 h-4" />
                      </button>
                   </div>
                </div>
@@ -500,7 +518,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
           )}
 
           {/* CHECKOUT & PAYMENT */}
-          {view === 'CHECKOUT' && selectedTrip && selectedSeat && (
+          {view === 'CHECKOUT' && selectedTrip && selectedSeats.length > 0 && (
             <motion.div 
                key="checkout"
                initial={{ opacity: 0, scale: 0.98 }}
@@ -529,8 +547,8 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                            </div>
                         </div>
                         <div className="text-center bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10">
-                           <span className="block text-[8px] font-black text-white/50 uppercase">المقعد</span>
-                           <span className="text-2xl font-black font-display text-emerald-400">{selectedSeat}</span>
+                           <span className="block text-[8px] font-black text-white/50 uppercase">المقاعد ({selectedSeats.length})</span>
+                           <span className="text-xl font-black font-display text-emerald-400">{selectedSeats.join(', ')}</span>
                         </div>
                      </div>
                   </div>
@@ -538,22 +556,35 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                   <div className="h-px bg-white/10"></div>
 
                   <div className="space-y-4">
-                     <p className="text-[10px] font-black text-emerald-400/50 uppercase tracking-widest leading-none">بيانات المسافر</p>
-                     <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <div className="w-12 h-12 bg-emerald-800 rounded-xl flex items-center justify-center font-black text-lg">
-                           {user?.displayName.charAt(0)}
-                        </div>
-                        <div>
-                           <p className="font-black text-sm">{user?.displayName}</p>
-                           <p className="text-[10px] font-bold text-emerald-300/40 uppercase tracking-widest">{user?.email}</p>
-                        </div>
+                     <p className="text-[10px] font-black text-emerald-400/50 uppercase tracking-widest leading-none">بيانات المسافرين</p>
+                     <div className="space-y-3">
+                       {selectedSeats.map((seat, index) => (
+                         <div key={seat} className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
+                           <div className="flex justify-between items-center text-sm">
+                             <span className="font-bold text-emerald-400">تذكرة مقعد {seat}</span>
+                             {index === 0 && <span className="text-[10px] bg-emerald-800 px-2 py-1 rounded-md text-white font-black">المسؤول عن الدفع</span>}
+                           </div>
+                           <input
+                             type="text"
+                             className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-emerald-200/40 focus:outline-none focus:border-emerald-500 transition-colors"
+                             placeholder={index === 0 ? "اسم المسافر الأساسي" : "اسم المسافر المرافق (اختياري)"}
+                             value={index === 0 ? user?.displayName : passengersData[seat] || ''}
+                             onChange={(e) => {
+                               if (index !== 0) {
+                                  setPassengersData({...passengersData, [seat]: e.target.value});
+                               }
+                             }}
+                             readOnly={index === 0}
+                           />
+                         </div>
+                       ))}
                      </div>
                   </div>
 
                   <div className="pt-4">
                      <div className="flex justify-between items-center mb-6">
                         <span className="text-gray-400 font-bold">السعر الإجمالي</span>
-                        <span className="text-3xl font-black font-display">{selectedTrip.price.toLocaleString()} <span className="text-sm">د.ع</span></span>
+                        <span className="text-3xl font-black font-display">{(selectedTrip.price * selectedSeats.length).toLocaleString()} <span className="text-sm">د.ع</span></span>
                      </div>
                      <button 
                        onClick={handleCreateTicket}
@@ -565,7 +596,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                        ) : (
                          <>
                            <CreditCard className="w-6 h-6" />
-                           <span>ادفع الآن (شِلّن)</span>
+                           <span>ادفع الإجمالي الآن (شِلّن)</span>
                          </>
                        )}
                      </button>
@@ -574,7 +605,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
 
                <div className="text-center p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100">
                   <p className="text-[11px] font-bold text-emerald-600 leading-relaxed">
-                     بمجرد الدفع، سيتم إنشاء تذكرة رقمية QR Code خاصة بك. <br />
+                     سيتم إنشاء تذاكر منفصلة لكل مسافر تحت حجز واحد. <br />
                      تأكد من الحضور للمحطة قبل 15 دقيقة من موعد الانطلاق.
                   </p>
                </div>
@@ -595,44 +626,51 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                      <CheckCircle strokeWidth={3} className="w-8 h-8" />
                   </div>
                   <h2 className="text-3xl font-black font-display text-emerald-950 tracking-tight">تم الحجز بنجاح!</h2>
-                  <p className="text-gray-500 font-medium">نتمنى لك رحلة ممتعة وآمنة.</p>
+                  <p className="text-gray-500 font-medium">تم إصدار {ticketData.length} تذاكر. نتمنى لكم رحلة ممتعة وآمنة.</p>
                </div>
 
-               <div className="bg-white rounded-[3rem] shadow-2xl shadow-emerald-900/10 border border-gray-100 overflow-hidden relative">
-                  <div className="p-8 pb-4 space-y-6">
-                     <div className="flex justify-center p-6 bg-gray-50 border-2 border-gray-100 rounded-[2.5rem]">
-                        <QRCodeSVG value={ticketData.qrCode} size={200} fgColor="#064e3b" />
-                     </div>
-                     <div className="text-center">
-                        <p className="text-[10px] font-black text-emerald-600/50 uppercase tracking-widest mb-1">معرف التذكرة</p>
-                        <p className="font-mono text-[10px] font-bold text-gray-400 tracking-[0.3em]">{ticketData.id}</p>
-                     </div>
-                  </div>
+               <div className="space-y-6">
+                 {ticketData.map((ticket, idx) => (
+                   <div key={ticket.id} className="bg-white rounded-[3rem] shadow-2xl shadow-emerald-900/10 border border-gray-100 overflow-hidden relative">
+                      <div className="absolute top-4 right-6">
+                         <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-3 py-1 rounded-full">تذكرة {idx + 1}</span>
+                      </div>
+                      <div className="p-8 pb-4 mt-4 space-y-6">
+                         <div className="flex justify-center p-6 bg-gray-50 border-2 border-gray-100 rounded-[2.5rem]">
+                            <QRCodeSVG value={ticket.qrCode} size={150} fgColor="#064e3b" />
+                         </div>
+                         <div className="text-center">
+                            <p className="text-[10px] font-black text-emerald-600/50 uppercase tracking-widest mb-1">{ticket.passengerName}</p>
+                            <p className="font-mono text-[10px] font-bold text-gray-400 tracking-[0.3em]">{ticket.id}</p>
+                         </div>
+                      </div>
 
-                  <div className="h-px border-t border-dashed border-gray-200 mx-8 relative">
-                     <div className="absolute top-1/2 left-0 w-6 h-6 bg-[#FDFDFD] -translate-x-1/2 -translate-y-1/2 rounded-full border-r border-gray-100"></div>
-                     <div className="absolute top-1/2 right-0 w-6 h-6 bg-[#FDFDFD] translate-x-1/2 -translate-y-1/2 rounded-full border-l border-gray-100"></div>
-                  </div>
+                      <div className="h-px border-t border-dashed border-gray-200 mx-8 relative">
+                         <div className="absolute top-1/2 left-0 w-6 h-6 bg-[#FDFDFD] -translate-x-1/2 -translate-y-1/2 rounded-full border-r border-gray-100"></div>
+                         <div className="absolute top-1/2 right-0 w-6 h-6 bg-[#FDFDFD] translate-x-1/2 -translate-y-1/2 rounded-full border-l border-gray-100"></div>
+                      </div>
 
-                  <div className="p-8 grid grid-cols-2 gap-y-6">
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">المسار</p>
-                        <p className="font-black text-emerald-950 text-lg leading-tight">{selectedTrip.departureCity} - {selectedTrip.arrivalCity}</p>
-                     </div>
-                     <div className="text-left">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">المقعد</p>
-                        <p className="font-black text-emerald-600 text-3xl font-display">{ticketData.seatNumber}</p>
-                     </div>
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">الانطلاق</p>
-                        <p className="font-black text-emerald-950">{format(new Date(selectedTrip.departureTime), 'HH:mm')}</p>
-                        <p className="text-[10px] font-bold text-gray-400">{format(new Date(selectedTrip.departureTime), 'dd/MM/yyyy')}</p>
-                     </div>
-                     <div className="text-left">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">الرصيف</p>
-                        <p className="font-black text-emerald-950">G-12</p>
-                     </div>
-                  </div>
+                      <div className="p-8 grid grid-cols-2 gap-y-6">
+                         <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">المسار</p>
+                            <p className="font-black text-emerald-950 text-lg leading-tight">{selectedTrip.departureCity} - {selectedTrip.arrivalCity}</p>
+                         </div>
+                         <div className="text-left">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">المقعد</p>
+                            <p className="font-black text-emerald-600 text-3xl font-display">{ticket.seatNumber}</p>
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">الانطلاق</p>
+                            <p className="font-black text-emerald-950">{format(new Date(selectedTrip.departureTime), 'HH:mm')}</p>
+                            <p className="text-[10px] font-bold text-gray-400">{format(new Date(selectedTrip.departureTime), 'dd/MM/yyyy')}</p>
+                         </div>
+                         <div className="text-left">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">الرصيف</p>
+                            <p className="font-black text-emerald-950">G-12</p>
+                         </div>
+                      </div>
+                   </div>
+                 ))}
                </div>
 
                <div className="flex gap-4">
@@ -673,7 +711,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.1 }}
-                          onClick={() => { setTicketData(b); setSelectedTrip(trip); setView('SUCCESS'); }}
+                          onClick={() => { setTicketData([b]); setSelectedTrip(trip); setView('SUCCESS'); }}
                           className="bg-white p-5 rounded-[2rem] border border-gray-50 flex items-center gap-5 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative"
                         >
                            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 flex-shrink-0">
@@ -1144,7 +1182,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                           setIsMenuOpen(false);
                           if (!selectedTrip || !ticketData) {
                             setSelectedTrip(mockTrips[0]);
-                            setTicketData({
+                            setTicketData([{
                               id: 'MOCK-123',
                               tripId: mockTrips[0].id,
                               userId: user?.uid || 'u1',
@@ -1154,7 +1192,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                               paymentMethod: 'Shellen',
                               createdAt: new Date().toISOString(),
                               qrCode: 'mock-qr'
-                            });
+                            }]);
                           }
                           setView('TRACKING');
                         }}
