@@ -123,11 +123,11 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
     
     if (selectedTrip && selectedSeats.length > 0 && user) {
       const groupId = `BKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-      const newBookings: Booking[] = selectedSeats.map(seat => ({
+      const newBookings: Booking[] = selectedSeats.map((seat, index) => ({
         id: `${groupId}-${seat}`,
         tripId: selectedTrip.id,
         userId: user.uid,
-        passengerName: passengersData[seat] || user.displayName, // primary or companions
+        passengerName: index === 0 ? user.displayName : (passengersData[seat] || 'مرافق'),
         seatNumber: seat,
         status: 'confirmed',
         paymentMethod: 'Shellen Balance',
@@ -448,7 +448,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                                if (selectedSeats.includes(s)) {
                                  setSelectedSeats(selectedSeats.filter(seat => seat !== s));
                                } else {
-                                 if (selectedSeats.length < 5) {
+                                 if (selectedSeats.length < 3) {
                                    setSelectedSeats([...selectedSeats, s]);
                                  }
                                }
@@ -473,7 +473,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                                if (selectedSeats.includes(s)) {
                                  setSelectedSeats(selectedSeats.filter(seat => seat !== s));
                                } else {
-                                 if (selectedSeats.length < 5) {
+                                 if (selectedSeats.length < 3) {
                                    setSelectedSeats([...selectedSeats, s]);
                                  }
                                }
@@ -493,9 +493,23 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
 
                   <div className="flex gap-6 mt-12 text-[10px] font-bold text-gray-400 bg-gray-50 px-6 py-2 rounded-full border border-gray-100">
                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-white border border-gray-200 rounded-sm"></div> متاح</div>
-                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> مختار</div>
+                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> لك ولمرافقيك</div>
                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded-sm opacity-50"></div> محجوز</div>
                   </div>
+
+                  {selectedSeats.length > 0 && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       className="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3 w-full max-w-sm"
+                     >
+                       <Clock className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                       <div>
+                         <p className="text-sm font-black text-amber-900 mb-1">تم تثبيت {selectedSeats.length} مقاعد مؤقتاً</p>
+                         <p className="text-xs font-bold text-amber-700/80 leading-relaxed">الرجاء إتمام الدفع خلال العشـر دقائق القادمة (09:59) لتأكيد الحجز.</p>
+                       </div>
+                     </motion.div>
+                  )}
                </div>
 
                {/* Bottom Floating Bar */}
@@ -636,6 +650,27 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-3 py-1 rounded-full">تذكرة {idx + 1}</span>
                       </div>
                       <div className="p-8 pb-4 mt-4 space-y-6">
+                         <div className="flex flex-wrap justify-between items-start gap-2">
+                            {idx > 0 ? (
+                               <button className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform text-xs font-bold w-fit" aria-label="مشاركة التذكرة">
+                                  <span>مشاركة للراكب</span>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                               </button>
+                            ) : (
+                               <div></div>
+                            )}
+                            <button 
+                               onClick={() => {
+                                  if (confirm('هل أنت متأكد أنك تريد إلغاء هذه التذكرة تحديداً؟ سيتم استرداد المبلغ.')) {
+                                     setTicketData(ticketData.filter(t => t.id !== ticket.id));
+                                     setMyBookings(myBookings.filter(b => b.id !== ticket.id));
+                                  }
+                               }}
+                               className="bg-red-50 text-red-600 px-3 py-1.5 rounded-full flex items-center gap-2 active:scale-95 transition-transform text-[10px] font-bold w-fit ml-auto"
+                            >
+                               إلغاء جزئي (استرداد)
+                            </button>
+                         </div>
                          <div className="flex justify-center p-6 bg-gray-50 border-2 border-gray-100 rounded-[2.5rem]">
                             <QRCodeSVG value={ticket.qrCode} size={150} fgColor="#064e3b" />
                          </div>
@@ -702,33 +737,50 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
                <h2 className="text-3xl font-black font-display text-emerald-950 pt-4">حجوزاتي</h2>
                
                <div className="space-y-4">
-                  {myBookings.length > 0 ? myBookings.map((b, idx) => {
-                     const trip = mockTrips.find(t => t.id === b.tripId);
-                     if (!trip) return null;
-                     return (
-                        <motion.div 
-                          key={b.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                          onClick={() => { setTicketData([b]); setSelectedTrip(trip); setView('SUCCESS'); }}
-                          className="bg-white p-5 rounded-[2rem] border border-gray-50 flex items-center gap-5 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative"
-                        >
-                           <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 flex-shrink-0">
-                              <span className="text-[10px] font-black text-emerald-600/50 uppercase">{format(new Date(trip.departureTime), 'MMM', { locale: ar })}</span>
-                              <span className="text-2xl font-black text-emerald-700 font-display leading-none">{format(new Date(trip.departureTime), 'd')}</span>
-                           </div>
-                           <div className="flex-1 min-w-0">
-                              <h4 className="font-black text-emerald-950 text-sm truncate">{trip.departureCity} ← {trip.arrivalCity}</h4>
-                              <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 mt-1">
-                                 <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(new Date(trip.departureTime), 'HH:mm')}</div>
-                                 <div className="flex items-center gap-1"><UserIcon className="w-3 h-3" /> مقعد {b.seatNumber}</div>
-                              </div>
-                           </div>
-                           <ChevronRight className="w-4 h-4 text-gray-300" />
-                        </motion.div>
-                     );
-                  }) : (
+                  {myBookings.length > 0 ? (
+                     Object.entries(
+                       myBookings.reduce((acc, b) => {
+                         const groupId = b.id.split('-').slice(0, 2).join('-');
+                         if (!acc[groupId]) acc[groupId] = [];
+                         acc[groupId].push(b);
+                         return acc;
+                       }, {} as Record<string, Booking[]>)
+                     ).map(([groupId, groupBookings], idx) => {
+                       const trip = mockTrips.find(t => t.id === groupBookings[0].tripId);
+                       if (!trip) return null;
+                       return (
+                          <motion.div 
+                            key={groupId}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            onClick={() => { setTicketData(groupBookings); setSelectedTrip(trip); setView('SUCCESS'); }}
+                            className="bg-white p-5 rounded-[2rem] border border-gray-50 flex flex-col gap-4 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative"
+                          >
+                             <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex flex-col items-center justify-center border border-emerald-100 flex-shrink-0">
+                                   <span className="text-[10px] font-black text-emerald-600/50 uppercase">{format(new Date(trip.departureTime), 'MMM', { locale: ar })}</span>
+                                   <span className="text-2xl font-black text-emerald-700 font-display leading-none">{format(new Date(trip.departureTime), 'd')}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                   <h4 className="font-black text-emerald-950 text-sm truncate">{trip.departureCity} ← {trip.arrivalCity}</h4>
+                                   <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 mt-1">
+                                      <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> {format(new Date(trip.departureTime), 'HH:mm')}</div>
+                                      <div className="flex items-center gap-1"><UserIcon className="w-3 h-3" /> {groupBookings.length} تذكرة</div>
+                                      <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black text-[8px]">تم الدفع</span>
+                                   </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                             </div>
+                             
+                             <div className="pt-3 border-t border-dashed border-gray-100 flex justify-between items-center text-xs">
+                               <span className="font-mono text-gray-400 tracking-widest">{groupId}</span>
+                               <span className="text-emerald-600 font-bold hover:underline">عرض تفاصيل المجموعة</span>
+                             </div>
+                          </motion.div>
+                       );
+                     })
+                  ) : (
                      <div className="text-center py-20 bg-gray-50/50 rounded-[3rem] border border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300 shadow-sm">
                            <TicketIcon className="w-8 h-8" />
