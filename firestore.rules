@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'ahmedalbannatech@gmail.com' &&
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Entities ---
+
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /companies/{companyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /buses/{busId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /trips/{tripId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      function isValidBooking(data) {
+        return data.tripId is string &&
+               data.userId == request.auth.uid &&
+               data.passengerName is string && data.passengerName.size() <= 100 &&
+               data.seatNumber is number &&
+               data.status in ['pending', 'confirmed', 'cancelled'];
+      }
+
+      allow create: if isSignedIn() && isValidBooking(request.resource.data);
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin()) && 
+                    request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin();
+    }
+  }
+}

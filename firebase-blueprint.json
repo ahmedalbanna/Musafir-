@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "City": {
+      "title": "City",
+      "description": "A city served by the bus network",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "required": ["name", "code"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "A bus transportation company",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "logo": { "type": "string" },
+        "rating": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Bus": {
+      "title": "Bus",
+      "description": "A specific bus vehicle",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "plateNumber": { "type": "string" },
+        "type": { "type": "string", "enum": ["Standard", "VIP", "Business"] },
+        "totalSeats": { "type": "number" },
+        "layout": { "type": "string" }
+      },
+      "required": ["companyId", "totalSeats", "layout"]
+    },
+    "Trip": {
+      "title": "Trip",
+      "description": "A scheduled bus trip",
+      "type": "object",
+      "properties": {
+        "routeId": { "type": "string" },
+        "busId": { "type": "string" },
+        "companyId": { "type": "string" },
+        "departureCity": { "type": "string" },
+        "arrivalCity": { "type": "string" },
+        "departureTime": { "type": "string", "format": "date-time" },
+        "arrivalTime": { "type": "string", "format": "date-time" },
+        "price": { "type": "number" },
+        "availableSeats": { "type": "array", "items": { "type": "number" } }
+      },
+      "required": ["routeId", "busId", "departureCity", "arrivalCity", "departureTime", "price"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A seat reservation",
+      "type": "object",
+      "properties": {
+        "tripId": { "type": "string" },
+        "userId": { "type": "string" },
+        "passengerName": { "type": "string" },
+        "seatNumber": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "paymentMethod": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "qrCode": { "type": "string" }
+      },
+      "required": ["tripId", "userId", "passengerName", "seatNumber", "status"]
+    }
+  },
+  "firestore": {
+    "/cities": { "schema": "City", "description": "List of cities" },
+    "/companies": { "schema": "Company", "description": "Bus companies" },
+    "/buses": { "schema": "Bus", "description": "Buses owned by companies" },
+    "/trips": { "schema": "Trip", "description": "Available trips" },
+    "/bookings": { "schema": "Booking", "description": "User bookings" }
+  }
+}
