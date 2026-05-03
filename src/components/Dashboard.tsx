@@ -20,19 +20,21 @@ import {
   Ticket,
   QrCode,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Briefcase,
+  Percent,
+  Star
 } from 'lucide-react';
 import { mockStats, mockTrips, mockBuses, mockBookings, mockCities } from '../data/mock';
 import { Trip, Bus, Booking } from '../types';
 import { format } from 'date-fns';
-import { QRCodeSVG } from 'qrcode.react';
 
 interface DashboardProps {
   onExit: () => void;
 }
 
 export default function Dashboard({ onExit }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TRIPS' | 'FLEET' | 'REPORTS' | 'POS' | 'BOARDING'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TRIPS' | 'FLEET' | 'POS' | 'BOARDING' | 'REPORTS' | 'AGENTS'>('OVERVIEW');
 
   return (
     <div className="flex min-h-screen bg-[#F0F2F5] text-emerald-950 font-sans" dir="rtl">
@@ -54,6 +56,7 @@ export default function Dashboard({ onExit }: DashboardProps) {
               { id: 'POS', label: 'نقطة البيع (POS)', icon: Ticket },
               { id: 'BOARDING', label: 'التدقيق (Boarding)', icon: QrCode },
               { id: 'REPORTS', label: 'التقارير المالية', icon: TrendingUp },
+              { id: 'AGENTS', label: 'إدارة الوكلاء', icon: Briefcase },
             ].map((item) => (
               <button
                 key={item.id}
@@ -95,6 +98,7 @@ export default function Dashboard({ onExit }: DashboardProps) {
               {activeTab === 'POS' && 'نقطة بيع التذاكر'}
               {activeTab === 'BOARDING' && 'تدقيق الركاب والصعود'}
               {activeTab === 'REPORTS' && 'التقارير والإحصائيات'}
+              {activeTab === 'AGENTS' && 'إدارة الوكلاء ونقاط البيع'}
             </h1>
             <p className="text-emerald-600/60 font-bold mt-1">مرحباً بك في لوحة تحكم خطوط الشمال</p>
           </div>
@@ -119,6 +123,7 @@ export default function Dashboard({ onExit }: DashboardProps) {
            {activeTab === 'POS' && <PosTab />}
            {activeTab === 'BOARDING' && <BoardingTab />}
            {activeTab === 'REPORTS' && <ReportsTab />}
+           {activeTab === 'AGENTS' && <AgentsTab />}
         </section>
       </main>
     </div>
@@ -209,6 +214,8 @@ function OverviewTab() {
 }
 
 function TripsTab() {
+  const [showAddModal, setShowAddModal] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -224,7 +231,10 @@ function TripsTab() {
             <button className="bg-white border border-gray-100 px-4 py-2 rounded-2xl flex items-center gap-2 text-sm font-bold text-gray-500 hover:bg-gray-50 shadow-sm">
                <Filter className="w-4 h-4" /> تصفية
             </button>
-            <button className="bg-emerald-600 text-white px-6 py-2 rounded-2xl flex items-center gap-2 text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-emerald-600 text-white px-6 py-2 rounded-2xl flex items-center gap-2 text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+            >
                <Plus className="w-4 h-4" /> إضافة رحلة جديدة
             </button>
          </div>
@@ -239,8 +249,7 @@ function TripsTab() {
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">وقت الانطلاق</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">الإشغال</th>
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">السعر</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">الحالة</th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">الإجراء</th>
                </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -271,20 +280,97 @@ function TripsTab() {
                           <span className="text-xs font-bold text-emerald-700">{trip.availableSeats.length}/40</span>
                        </div>
                     </td>
-                    <td className="px-6 py-4 font-black text-emerald-950">{trip.price.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-black text-emerald-950">{trip.price.toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">د.ع</span></td>
                     <td className="px-6 py-4">
-                       <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">نشطة</span>
-                    </td>
-                    <td className="px-6 py-4">
-                       <button className="text-gray-400 hover:text-emerald-600">
-                          <ChevronRight className="w-5 h-5" />
-                       </button>
+                       <div className="flex gap-2">
+                         <button className="text-gray-400 hover:text-emerald-600 text-xs font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">تعديل</button>
+                         <button className="text-gray-400 hover:text-red-600 text-xs font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">إلغاء</button>
+                       </div>
                     </td>
                  </tr>
                ))}
             </tbody>
          </table>
       </div>
+
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-emerald-950/20 backdrop-blur-sm"
+              onClick={() => setShowAddModal(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[2rem] p-8 max-w-2xl w-full relative z-10 shadow-2xl"
+            >
+              <h2 className="text-2xl font-black text-emerald-950 font-display mb-6">إضافة رحلة جديدة</h2>
+              
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">من</label>
+                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 flex-1">
+                     {mockCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">إلى</label>
+                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950 flex-1" defaultValue="أربيل">
+                     {mockCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">وقت الانطلاق</label>
+                   <input type="datetime-local" className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950" />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-400 mb-2">الحافلة المخصصة</label>
+                   <select className="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold text-emerald-950">
+                     {mockBuses.map(b => <option key={b.id} value={b.id}>{b.plateNumber} ({b.type} - {b.totalSeats} مقعد)</option>)}
+                   </select>
+                 </div>
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-8">
+                 <h3 className="text-sm font-bold text-emerald-950 mb-4 flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-600" /> التسعير الديناميكي (Dynamic Pricing)</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-2">السعر الأساسي</label>
+                      <input type="number" defaultValue="25000" className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold text-emerald-950 focus:border-emerald-500 focus:ring-0" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-2">سعر المواسم / الذروة</label>
+                      <input type="number" defaultValue="35000" className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold text-emerald-950 focus:border-emerald-500 focus:ring-0" />
+                    </div>
+                 </div>
+                 <div className="mt-4 flex items-center justify-between bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
+                   <div>
+                     <p className="text-sm font-bold text-emerald-950 mb-1">خصم الحجز المبكر</p>
+                     <p className="text-xs text-gray-500">تطبيق خصم 10% قبل 48 ساعة من الانطلاق</p>
+                   </div>
+                   <div className="w-12 h-6 bg-emerald-500 rounded-full relative cursor-pointer">
+                     <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-sm"></div>
+                   </div>
+                 </div>
+              </div>
+
+              <div className="flex gap-4">
+                 <button className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95" onClick={() => setShowAddModal(false)}>
+                   نشر وإتاحة للحجز
+                 </button>
+                 <button className="flex-1 bg-white border-2 border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50" onClick={() => setShowAddModal(false)}>
+                   إلغاء
+                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -293,7 +379,7 @@ function FleetTab() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
        {mockBuses.map(bus => (
-         <div key={bus.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:bg-emerald-900 transition-all duration-500">
+         <div key={bus.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:bg-emerald-900 hover:border-emerald-900 transition-all duration-500">
             <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mb-6 group-hover:bg-emerald-800 transition-colors">
                <BusIcon className="w-10 h-10 text-emerald-600 group-hover:text-emerald-400" />
             </div>
@@ -302,14 +388,21 @@ function FleetTab() {
             
             <div className="w-full grid grid-cols-2 gap-4 pt-6 border-t border-gray-50 group-hover:border-emerald-800">
                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">المخطط</p>
-                  <p className="font-bold text-emerald-950 group-hover:text-white">{bus.layout}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">المخطط (Layout)</p>
+                  <p className="font-bold text-emerald-950 group-hover:text-white flex justify-center items-center gap-1">
+                     {bus.layout === 'VIP (2+1)' ? (
+                        <><Star className="w-3 h-3 text-amber-500" /> VIP (2+1)</>
+                     ) : (
+                        <>ثنائي (2+2)</>
+                     )}
+                  </p>
                </div>
                <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">الحالة</p>
-                  <p className="font-bold text-emerald-500">جاهز</p>
+                  <p className="font-bold text-emerald-500">جاهز للرحلة</p>
                </div>
             </div>
+            
             <button className="mt-8 w-full py-3 bg-gray-50 rounded-xl text-sm font-bold text-emerald-950 hover:bg-emerald-100 transition-colors group-hover:bg-emerald-800 group-hover:text-white">
                التفاصيل والصيانة
             </button>
@@ -319,24 +412,9 @@ function FleetTab() {
           <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-4 group-hover:bg-emerald-50">
              <Plus className="w-8 h-8" />
           </div>
-          <span className="font-black text-lg">إضافة حافلة جديدة</span>
+          <span className="font-black text-lg">إضافة مخطط / حافلة</span>
        </button>
     </div>
-  );
-}
-
-function ReportsTab() {
-  return (
-     <div className="bg-white p-12 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center text-center h-[500px] justify-center">
-        <TrendingUp className="w-16 h-16 text-emerald-200 mb-6" />
-        <h3 className="text-2xl font-black text-emerald-950 mb-2">وحدة التقارير المتقدمة</h3>
-        <p className="text-gray-500 font-medium max-w-sm mb-8 leading-relaxed">
-           هذه الوحدة قيد التطوير لتوفير تحليلات دقيقة حول الأرباح، أداء الخطوط، وتوقعات الطلب باستخدام الذكاء الاصطناعي.
-        </p>
-        <button className="bg-emerald-950 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3">
-           تحميل تقرير الشهر الماضي (PDF) <DollarSign className="w-5 h-5" />
-        </button>
-     </div>
   );
 }
 
@@ -509,6 +587,163 @@ function BoardingTab() {
            )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ReportsTab() {
+  return (
+     <div className="space-y-8">
+        <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+           <div>
+             <h2 className="text-xl font-black text-emerald-950 font-display">التقارير المالية والتشغيلية</h2>
+             <p className="text-sm font-bold text-gray-400 mt-1">عرض تحليلات الإيرادات ونسب الإشغال لكل خط.</p>
+           </div>
+           <div className="flex gap-3">
+             <button className="bg-gray-50 border border-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-50 transition-colors">
+                <Calendar className="w-4 h-4" /> هذا الشهر
+             </button>
+             <button className="bg-emerald-950 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-800 transition-colors shadow-lg shadow-emerald-900/20 active:scale-95">
+                تصدير (PDF/Excel) <DollarSign className="w-4 h-4" />
+             </button>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           {/* Revenue Breakdown */}
+           <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-black text-emerald-950 font-display mb-6">تفصيل الإيرادات</h3>
+              
+              <div className="space-y-6">
+                 <div>
+                    <div className="flex justify-between items-end mb-2">
+                       <span className="text-sm font-bold text-gray-500">حجوزات إلكترونية (محفظة شِلّن)</span>
+                       <span className="font-black text-xl text-emerald-600">8,450,000 <span className="text-xs text-gray-400">د.ع</span></span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                       <div className="h-full bg-emerald-500" style={{ width: '65%' }}></div>
+                    </div>
+                 </div>
+                 
+                 <div>
+                    <div className="flex justify-between items-end mb-2">
+                       <span className="text-sm font-bold text-gray-500">نقاط البيع (الوكلاء والمحطة)</span>
+                       <span className="font-black text-xl text-orange-500">4,550,000 <span className="text-xs text-gray-400">د.ع</span></span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                       <div className="h-full bg-orange-500" style={{ width: '35%' }}></div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
+                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1">صافي إيراد المُشغّل</p>
+                    <p className="font-black text-emerald-950 text-xl">11,700,000 <span className="text-xs">د.ع</span></p>
+                 </div>
+                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">عمولات (النقابة + المنصة)</p>
+                    <p className="font-black text-gray-900 text-xl">1,300,000 <span className="text-xs">د.ع</span></p>
+                 </div>
+              </div>
+           </div>
+
+           {/* Top Routes */}
+           <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-black text-emerald-950 font-display mb-6">أكثر الخطوط نشاطاً</h3>
+              
+              <div className="space-y-4">
+                 {[
+                   { route: 'بغداد - أربيل', bookings: 420, revenue: 10500000, trend: '+15%' },
+                   { route: 'بغداد - البصرة', bookings: 310, revenue: 12400000, trend: '+5%' },
+                   { route: 'أربيل - السليمانية', bookings: 185, revenue: 3700000, trend: '-2%' },
+                 ].map((route, i) => (
+                   <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-colors border border-transparent hover:border-emerald-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white shadow-sm rounded-full flex items-center justify-center font-bold text-emerald-600">
+                           #{i + 1}
+                        </div>
+                        <div>
+                           <p className="font-bold text-emerald-950">{route.route}</p>
+                           <p className="text-[10px] font-bold text-gray-400">{route.bookings} رحلة مباعة</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <p className="font-black text-emerald-950">{route.revenue.toLocaleString()} <span className="text-xs font-normal">د.ع</span></p>
+                         <p className={`text-[10px] font-bold ${route.trend.startsWith('+') ? 'text-emerald-500' : 'text-red-400'}`}>{route.trend} مقارنة بالشهر السابق</p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+     </div>
+  );
+}
+
+function AgentsTab() {
+  const agents = [
+    { id: 'a1', name: 'مكتب السنابل للسفر', location: 'بغداد - المنصور', commission: 5, sales: 1250000, isActive: true },
+    { id: 'a2', name: 'شركة أطياف السياحية', location: 'أربيل - عنكاوا', commission: 7, sales: 3400000, isActive: true },
+    { id: 'a3', name: 'كشك المحطة الموحد', location: 'البصرة', commission: 4, sales: 850000, isActive: false },
+  ];
+
+  return (
+    <div className="space-y-8">
+       <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+          <div>
+            <h2 className="text-xl font-black text-emerald-950 font-display">إدارة وكلاء السفر (Agents & POS)</h2>
+            <p className="text-sm font-bold text-gray-400 mt-1">منح صلاحيات إصدار التذاكر لمكاتب خارجية مع حساب العمولة التلقائية.</p>
+          </div>
+          <button className="bg-emerald-950 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-800 transition-colors shadow-lg shadow-emerald-900/20 active:scale-95">
+             <Plus className="w-4 h-4" /> إضافة وكيل جديد
+          </button>
+       </div>
+
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {agents.map(agent => (
+            <div key={agent.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+               {!agent.isActive && (
+                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                    <span className="bg-gray-100 text-gray-500 font-black px-4 py-2 rounded-full text-sm border border-gray-200">موقوف مؤقتاً</span>
+                 </div>
+               )}
+               
+               <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                       <Briefcase className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <h3 className="font-bold text-emerald-950 text-lg">{agent.name}</h3>
+                       <p className="text-xs font-bold text-gray-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> {agent.location}</p>
+                    </div>
+                  </div>
+                  <button className="text-gray-300 hover:text-emerald-600"><Settings className="w-5 h-5" /></button>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Percent className="w-3 h-3 text-emerald-500"/> نسبة العمولة</p>
+                    <p className="font-black text-emerald-950 text-lg">{agent.commission}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">مبيعات الشهر</p>
+                    <p className="font-black text-emerald-950 text-lg">{agent.sales.toLocaleString()} <span className="text-xs text-gray-400">د.ع</span></p>
+                  </div>
+               </div>
+
+               <div className="mt-6 pt-4 border-t border-gray-50 flex gap-2">
+                 <button className="flex-1 bg-gray-50 text-gray-500 font-bold py-2 rounded-lg text-xs hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                    سجل المبيعات
+                 </button>
+                 <button className="flex-1 bg-gray-50 text-gray-500 font-bold py-2 rounded-lg text-xs hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                    تسوية الحساب
+                 </button>
+               </div>
+            </div>
+          ))}
+       </div>
     </div>
   );
 }
