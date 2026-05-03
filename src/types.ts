@@ -45,3 +45,21 @@ export interface Booking {
   createdAt: string;
   qrCode: string;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'trip_reminder' | 'schedule_change' | 'promotion' | 'system';
+  isRead: boolean;
+  createdAt: string;
+  relatedId?: string;
+}
+
+export interface NotificationPreferences {
+  upcomingTrips: boolean;
+  scheduleChanges: boolean;
+  promotions: boolean;
+  systemUpdates: boolean;
+}

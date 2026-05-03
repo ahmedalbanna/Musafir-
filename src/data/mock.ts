@@ -1,4 +1,4 @@
-import { City, Company, Bus, Trip, Booking } from '../types';
+import { City, Company, Bus, Trip, Booking, Notification, NotificationPreferences } from '../types';
 import { addDays, setHours, setMinutes, formatISO } from 'date-fns';
 
 export const mockCities: City[] = [
@@ -110,3 +110,42 @@ export const getTrips = async (from: string, to: string, date: string): Promise<
 
 export const getCompany = (id: string) => mockCompanies.find(c => c.id === id);
 export const getBus = (id: string) => mockBuses.find(b => b.id === id);
+
+export const mockNotifications: Notification[] = [
+  {
+    id: 'n1',
+    userId: 'u1',
+    title: 'تذكير بالرحلة',
+    message: 'رحلتك إلى أربيل غداً في الساعة 08:00 صباحاً. لا تنسى إحضار تذكرتك!',
+    type: 'trip_reminder',
+    isRead: false,
+    createdAt: formatISO(new Date()),
+    relatedId: 't1'
+  },
+  {
+    id: 'n2',
+    userId: 'u1',
+    title: 'تغيير في الجدول',
+    message: 'تم تأخير رحلة البصرة لمدة 30 دقيقة بسبب الظروف الجوية.',
+    type: 'schedule_change',
+    isRead: true,
+    createdAt: formatISO(addDays(new Date(), -1)),
+    relatedId: 't2'
+  },
+  {
+    id: 'n3',
+    userId: 'u1',
+    title: 'عرض خاص!',
+    message: 'احصل على خصم 20% على رحلتك القادمة باستخدام الكود: RAMADAN2026',
+    type: 'promotion',
+    isRead: false,
+    createdAt: formatISO(addDays(new Date(), -2))
+  }
+];
+
+export const defaultPreferences: NotificationPreferences = {
+  upcomingTrips: true,
+  scheduleChanges: true,
+  promotions: false,
+  systemUpdates: true
+};

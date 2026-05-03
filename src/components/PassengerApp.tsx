@@ -5,14 +5,15 @@ import {
   LogOut, Ticket as TicketIcon, ChevronRight, ArrowRight,
   Clock, ShieldCheck, CreditCard, QrCode, Star, Navigation,
   LayoutDashboard, Lock, CheckCircle, Home, History, Bell,
-  Menu, X, Filter, SlidersHorizontal, Map, Wifi, Zap, Wind, Coffee
+  Menu, X, Filter, SlidersHorizontal, Map, Wifi, Zap, Wind, Coffee,
+  Settings, BellRing, Trash2
 } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, setHours, setMinutes } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../lib/utils';
-import { getTrips, mockCities, getCompany, getBus, mockTrips, mockCompanies } from '../data/mock';
-import { Trip, Booking } from '../types';
+import { getTrips, mockCities, getCompany, getBus, mockTrips, mockCompanies, mockNotifications, defaultPreferences } from '../data/mock';
+import { Trip, Booking, Notification, NotificationPreferences } from '../types';
 import TrackingMap from './TrackingMap';
 
 interface PassengerAppProps {
@@ -30,7 +31,7 @@ const AMENITIES = [
 ];
 
 export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator }: PassengerAppProps) {
-  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING'>('HOME');
+  const [view, setView] = useState<'HOME' | 'RESULTS' | 'SEAT' | 'CHECKOUT' | 'SUCCESS' | 'BOOKINGS' | 'TRACKING' | 'NOTIFICATIONS' | 'NOTIFICATION_SETTINGS'>('HOME');
   const [searchParams, setSearchParams] = useState({ 
     from: 'بغداد', 
     to: 'أربيل', 
@@ -44,6 +45,18 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [ticketData, setTicketData] = useState<Booking | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>(defaultPreferences);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const deleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   // Filter States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -139,6 +152,15 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
         </div>
         
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setView('NOTIFICATIONS')}
+            className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 relative"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+               <span className="absolute top-1 right-1 bg-red-500 w-2 h-2 rounded-full border-2 border-white"></span>
+            )}
+          </button>
           {user ? (
              <button 
               onClick={() => setIsMenuOpen(true)}
@@ -680,6 +702,142 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
             </motion.div>
           )}
 
+          {/* NOTIFICATIONS VIEW */}
+          {view === 'NOTIFICATIONS' && (
+            <motion.div 
+               key="notifications"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="space-y-6 pb-20 flex flex-col min-h-screen"
+            >
+               <div className="flex items-center justify-between pt-4 px-4">
+                  <button onClick={() => setView('HOME')} className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <div className="text-center">
+                    <h2 className="font-black text-emerald-950 text-lg">التنبيهات</h2>
+                  </div>
+                  <button onClick={() => setView('NOTIFICATION_SETTINGS')} className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                    <Settings className="w-5 h-5" />
+                  </button>
+               </div>
+
+               <div className="px-4 space-y-4 overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    notifications.map((n) => (
+                      <motion.div 
+                        key={n.id}
+                        layout
+                        onClick={() => markAsRead(n.id)}
+                        className={cn(
+                          "p-5 rounded-3xl border transition-all relative overflow-hidden",
+                          n.isRead ? "bg-white border-gray-100 opacity-70" : "bg-emerald-50/50 border-emerald-100 shadow-sm"
+                        )}
+                      >
+                         {!n.isRead && <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 rounded-bl-xl shadow-sm" />}
+                         <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-3">
+                               <div className={cn(
+                                 "w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
+                                 n.type === 'trip_reminder' ? "bg-blue-50 text-blue-600" :
+                                 n.type === 'schedule_change' ? "bg-amber-50 text-amber-600" :
+                                 n.type === 'promotion' ? "bg-emerald-50 text-emerald-600" : "bg-gray-50 text-gray-600"
+                               )}>
+                                  {n.type === 'trip_reminder' ? <Clock className="w-5 h-5" /> :
+                                   n.type === 'schedule_change' ? <BellRing className="w-5 h-5" /> :
+                                   n.type === 'promotion' ? <Coffee className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                               </div>
+                               <h4 className="font-black text-emerald-950 text-sm">{n.title}</h4>
+                            </div>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                              className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                            >
+                               <Trash2 className="w-4 h-4" />
+                            </button>
+                         </div>
+                         <p className="text-xs text-gray-500 leading-relaxed font-medium mb-3">{n.message}</p>
+                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            {format(parseISO(n.createdAt), 'dd MMMM - HH:mm', { locale: ar })}
+                         </p>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-20 flex flex-col items-center justify-center text-center opacity-30">
+                       <BellRing className="w-16 h-16 mb-4 text-emerald-950" />
+                       <h3 className="font-black text-emerald-950">لا يوجد تنبيهات</h3>
+                       <p className="text-xs font-bold">كل شيء هادئ هنا حالياً</p>
+                    </div>
+                  )}
+               </div>
+            </motion.div>
+          )}
+
+          {/* NOTIFICATION SETTINGS VIEW */}
+          {view === 'NOTIFICATION_SETTINGS' && (
+            <motion.div 
+               key="notification_settings"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="space-y-6 pb-20 flex flex-col min-h-screen"
+            >
+               <div className="flex items-center justify-between pt-4 px-4">
+                  <button onClick={() => setView('NOTIFICATIONS')} className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <div className="text-center">
+                    <h2 className="font-black text-emerald-950 text-lg">إعدادات التنبيهات</h2>
+                  </div>
+                  <div className="w-10 h-10" />
+               </div>
+
+               <div className="px-6 space-y-8">
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">تفضيلات الإرسال</p>
+                     <div className="bg-white rounded-[2rem] border border-gray-100 divide-y divide-gray-50 overflow-hidden shadow-sm">
+                        {[
+                          { id: 'upcomingTrips', label: 'تذكير بالرحلات القادمة', desc: 'تنبيهات قبل 24 ساعة من انطلاق الرحلة' },
+                          { id: 'scheduleChanges', label: 'تغييرات في الجدول', desc: 'تنبيهات فورية عند تأجيل أو تعديل موعد رحلة' },
+                          { id: 'promotions', label: 'عروض وخصومات', desc: 'تنبيهات بالعروض الحصرية وأكواد الخصم' },
+                          { id: 'systemUpdates', label: 'تحديثات النظام', desc: 'معلومات عامة حول حسابك وتطبيق شِلّن' },
+                        ].map((pref) => (
+                          <div key={pref.id} className="p-5 flex items-center justify-between group">
+                             <div className="flex-1 ml-4">
+                                <h4 className="font-black text-emerald-950 text-sm mb-1">{pref.label}</h4>
+                                <p className="text-[10px] font-bold text-gray-400">{pref.desc}</p>
+                             </div>
+                             <button 
+                                onClick={() => setNotificationPrefs(prev => ({ ...prev, [pref.id]: !prev[pref.id as keyof NotificationPreferences] }))}
+                                className={cn(
+                                  "w-12 h-6 rounded-full transition-all relative p-1",
+                                  notificationPrefs[pref.id as keyof NotificationPreferences] ? "bg-emerald-600" : "bg-gray-200"
+                                )}
+                             >
+                                <motion.div 
+                                  animate={{ x: notificationPrefs[pref.id as keyof NotificationPreferences] ? 24 : 0 }}
+                                  className="w-4 h-4 bg-white rounded-full shadow-sm"
+                                />
+                             </button>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex gap-4">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+                        <ShieldCheck className="w-6 h-6" />
+                     </div>
+                     <div>
+                        <h4 className="font-black text-emerald-900 text-sm mb-1">خصوصيتك أولاً</h4>
+                        <p className="text-[10px] font-bold text-emerald-700/60 leading-relaxed">نحن لا نرسل سوى التنبيهات الضرورية التي تهمك. يمكنك التحكم في كل شيء من هنا.</p>
+                     </div>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+
           {/* TRACKING VIEW */}
           {view === 'TRACKING' && selectedTrip && ticketData && (
             <motion.div 
@@ -912,13 +1070,18 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
         {[
           { id: 'HOME', icon: Home, label: 'الرئيسية' },
           { id: 'BOOKINGS', icon: History, label: 'حجوزاتي' },
-          { id: 'NOTIF', icon: Bell, label: 'تنبيهات', badge: 2 },
+          { id: 'NOTIFICATIONS', icon: Bell, label: 'تنبيهات', badge: unreadCount },
           { id: 'PROFILE', icon: UserIcon, label: 'حسابي' },
         ].map((item) => (
           <button 
             key={item.id}
             onClick={() => {
-              if (item.id === 'HOME' || item.id === 'BOOKINGS') setView(item.id as any);
+              if (item.id === 'HOME' || item.id === 'BOOKINGS' || item.id === 'NOTIFICATIONS') {
+                setView(item.id as any);
+                if (item.id === 'NOTIFICATIONS') setIsMenuOpen(false);
+              } else if (item.id === 'PROFILE') {
+                setIsMenuOpen(true);
+              }
             }}
             className={cn(
               "flex flex-col items-center gap-1 relative transition-colors py-1",
@@ -927,7 +1090,7 @@ export default function PassengerApp({ user, onLogin, onLogout, onLaunchOperator
           >
             <item.icon className="w-5 h-5" />
             <span className="text-[10px] font-black">{item.label}</span>
-            {item.badge && (
+            {item.badge > 0 && (
                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
                   {item.badge}
                </span>
